@@ -68,7 +68,7 @@ export const SignInMiddleware = async (req: Request, res: Response, next: NextFu
     if (error) {
       next(new ApiError(error, 'AuthMiddleware', 401));
     }
-    res.locals.validatedSignInRequestBody = value;
+    res.locals.validatedSignInEPRequestBody = value;
     next();
   } catch (error) {
     next(new ApiError(error.message || error, 'SignInMiddleware', 401));

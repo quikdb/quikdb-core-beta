@@ -1,13 +1,13 @@
 import { Response } from 'express';
 import { LogAction, LogStatus, LogUsers, StatusCode, LogType } from '@/@types';
 import { Utils } from '@/utils';
-import { ClientSession, Model } from '@/services';
-import Services from '@/services/mongodb/setup';
+import { ClientSession, Model, UserMongoService, GoogleAuthService } from '@/services';
 
 /**
  */
 export class BaseController {
-  protected static authService = Services.authService;
+  protected static userService = UserMongoService;
+  protected static verifyGoogleToken = GoogleAuthService.verifyToken;
   /**
    * Aborts the current transaction and sends an error response.
    * @param res - Express response object.

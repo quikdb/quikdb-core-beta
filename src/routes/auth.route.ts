@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
 /**** controllers *****/
-import SignInController from '@/controllers/signin.controller';
+import AuthController from '@/controllers/auth.controller';
 
 /** Import Middlewares */
 import { SignInMiddleware, CheckTokenMiddleware } from '@/middlewares/auth.middleware';
@@ -18,7 +18,7 @@ export class AuthRoute implements Routes {
   }
 
   private initializeRoutes() {
-    this.router.post(`${this.path}/signin`, SignInMiddleware, SignInController.Signin);
-    this.router.get(`${this.path}/signout`, CheckTokenMiddleware, SignInController.Signout);
+    this.router.post(`${this.path}/signin`, SignInMiddleware, AuthController.SigninWithEmailAndPassword);
+    this.router.get(`${this.path}/signout`, CheckTokenMiddleware, AuthController.Signout);
   }
 }

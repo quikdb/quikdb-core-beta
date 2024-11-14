@@ -33,4 +33,5 @@ export const {
   PAYPAL_URL,
   STRIPE_URL,
   APPLICATION_NAME,
+  GOOGLE_CLIENT_ID,
 } = process.env;
