@@ -129,7 +129,7 @@ class AuthController extends BaseController {
     try {
       /************ Extract validated sign-in data ************/
       const validatedSignInWGoogleRequestBody = res.locals.validatedSignInWGoogleRequestBody;
-      
+
       const { googleToken } = validatedSignInWGoogleRequestBody;
 
       const payload = await AuthController.verifyGoogleToken(googleToken);
@@ -148,7 +148,7 @@ class AuthController extends BaseController {
         );
       }
 
-      const { email, name, sub: googleId } = payload;
+      const { email, sub: googleId } = payload;
 
       /************ Find user by email or phone number ************/
       const auth = await AuthController.userService.findOneMongo(
@@ -164,10 +164,24 @@ class AuthController extends BaseController {
         const user = await AuthController.userService.createMongo(
           {
             email,
-            googleId
+            googleId,
           },
           { session },
         );
+
+        if (!user.status) {
+          return AuthController.abortTransactionWithResponse(
+            res,
+            StatusCode.BAD_REQUEST,
+            session,
+            'invalid credentials',
+            LogStatus.FAIL,
+            ...AuthController.staticsInResponse,
+            {
+              email: '',
+            },
+          );
+        }
       }
 
       /************ Generate access token ************/
@@ -193,6 +207,146 @@ class AuthController extends BaseController {
           serviceLog: UserModel,
           options: {
             email,
+          },
+        },
+      );
+    } catch (error) {
+      console.log(error);
+      !session.transaction.isActive && (await session.abortTransaction());
+      session.endSession();
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.UNAUTHORIZED,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.SIGNUP,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: UserModel,
+          options: {},
+        },
+      );
+    } finally {
+      session.endSession();
+    }
+  }
+
+  /**
+   * Handles the user signin process using email and pw.
+   * @param req - Express request object containing the user sign-up data.
+   * @param res - Express response object to send the response.
+   */
+  async SigninWithCli(req: Request, res: Response) {
+    const session = null;
+    try {
+      /************ Extract token data from authorization process ************/
+      const tokenData = res.locals.tokenData;
+
+      /************ Find user by email or phone number ************/
+      const auth = await AuthController.userService.findOneMongo(
+        {
+          email: tokenData.email,
+          deleted: false,
+        },
+        { session, hiddenFields: ['password'] },
+      );
+
+      /************ Handle invalid credentials ************/
+      if (auth.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'invalid credentials',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+      /************ Extract validated sign-in data ************/
+      const validatedSignInWCliRequestBody = res.locals.validatedSignInWCliRequestBody;
+
+      const { password, principalId, username, canisterDetails } = validatedSignInWCliRequestBody;
+
+      /************ Validate password ************/
+      const valid = Utils.comparePasswords(password, auth.data.password);
+      console.log({ valid });
+      if (!valid) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.UNAUTHORIZED,
+          session,
+          'Invalid credentials',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: tokenData.email,
+          },
+        );
+      }
+
+      /************ updated user canister details ************/
+      const userUpdate = await AuthController.userService.updateOneMongo(
+        {
+          email: tokenData.email,
+          principalId,
+          username,
+          deleted: false,
+        },
+        {
+          canisterDetails: [...auth.data.canisterDetails, ...canisterDetails],
+        },
+        { session, hiddenFields: ['password'] },
+      );
+
+      /************ Handle invalid credentials ************/
+      if (userUpdate.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'invalid credentials',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Generate access token ************/
+      const payload = {
+        email: tokenData.email,
+      };
+
+      /************ Generate access token ************/
+      const accessToken = Utils.createToken(payload);
+
+      // send sign in notification.
+
+      /************ Commit the transaction and send a successful response ************/
+      await session.commitTransaction();
+      session.endSession();
+
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.OK,
+        {
+          accessToken,
+        },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.SIGNIN,
+          message: 'signin success.',
+          status: LogStatus.SUCCESS,
+          serviceLog: UserModel,
+          options: {
+            email: tokenData.email,
           },
         },
       );
