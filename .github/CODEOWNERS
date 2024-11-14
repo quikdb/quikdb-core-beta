@@ -1,0 +1,12 @@
+##########################################
+#             code ownership
+##########################################
+
+# default ownership: default owners for everything in the repo (Unless a later match takes precedence)
+*       @tezda/admin@tezda.com
+
+# (Order is important, the last matching pattern takes the most precedence)
+# When someone opens a pull request with .js files that only @backend team and not the global owner(s) will be requested for a review.
+*.ts @samsonajulor @chizobavictory @vishwesh5544 @shubhexists
+
+.github/* @samsonajulor

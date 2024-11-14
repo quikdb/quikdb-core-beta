@@ -1226,6 +1226,13 @@
   dependencies:
     "@types/node" "*"
 
+"@types/paypal-rest-sdk@^1.7.9":
+  version "1.7.9"
+  resolved "https://registry.yarnpkg.com/@types/paypal-rest-sdk/-/paypal-rest-sdk-1.7.9.tgz#6d81537cb5d1b2d1f5f8001c216eb72c0370ce15"
+  integrity sha512-Wu/F8HaC0UbAPGn983o6KLMsF5zxAzsLOj9dzOU9xRyqbsDuNBp1No1bM/9T3vdFiV5HdfwhXrhfhD1gRTycTg==
+  dependencies:
+    "@types/node" "*"
+
 "@types/qs@*":
   version "6.9.15"
   resolved "https://registry.yarnpkg.com/@types/qs/-/qs-6.9.15.tgz#adde8a060ec9c305a82de1babc1056e73bd64dce"

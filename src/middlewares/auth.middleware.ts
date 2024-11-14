@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { SignInValidationSchema } from '@/validations/auth.validation';
+import { ValidateRequests } from '@/validations/validations';
 import { Utils, ApiError } from '@/utils';
 import { UserDocument, UserModel, UserSchema } from '@/mongodb';
 import { MongoApiService } from '@/services';
@@ -64,7 +64,7 @@ export const AuthenticationMiddleware = async (req: Request, res: Response, next
 
 export const SignInMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { value, error } = Utils.validateJoiSchema(SignInValidationSchema, req.body);
+    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
     if (error) {
       next(new ApiError(error, 'AuthMiddleware', 401));
     }

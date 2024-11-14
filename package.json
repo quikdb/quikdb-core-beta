@@ -80,6 +80,7 @@
     "@types/node": "^22.9.0",
     "@types/node-cache": "^4.2.5",
     "@types/nodemailer": "^6.4.16",
+    "@types/paypal-rest-sdk": "^1.7.9",
     "@types/supertest": "^2.0.12",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^5.29.0",
