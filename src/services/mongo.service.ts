@@ -1,9 +1,6 @@
-// src/services/mongoApiService.ts
-
 import mongoose, {
   Model,
   ClientSession,
-  ObjectId,
   FilterQuery,
   QueryOptions,
   Require_id,
@@ -18,6 +15,7 @@ import mongoose, {
 } from 'mongoose';
 import { DbOptions, GenericAnyType, PaginatedResult, ServiceResponse, StatusCode } from '../@types';
 import { ApiError } from '../utils';
+import { ObjectId } from 'bson';
 
 // Define MongoDB URIs based on client names
 export const MONGO_URIS: { [clientName: string]: string } = {
@@ -34,26 +32,23 @@ export class BaseService<T extends Document> {
   }
 
   private validateModel() {
-    if (!this.model)
-      throw new ApiError('Please add a model', 'BaseService.validateModel', StatusCode.BAD_REQUEST);
+    if (!this.model) throw new ApiError('Please add a model', 'BaseService.validateModel', StatusCode.BAD_REQUEST);
   }
 
   private getSelectedFields = (hiddenFields: string[]) => {
-    return hiddenFields.map((field) => `+${field}`).join(' ');
+    return hiddenFields.map(field => `+${field}`).join(' ');
   };
 
   protected async create(data: Partial<T>, session: ClientSession | null = null): Promise<T> {
     this.validateModel();
-    const newDocument = new this.model!(data);
+    const newDocument = new this.model(data);
     return newDocument.save({ session });
   }
 
   protected async findById(id: ObjectId, options?: DbOptions): Promise<T | null> {
     this.validateModel();
     console.log({ options });
-    let query = this.model!.findById(id).session(
-      options?.session ? options.session : null
-    ) as mongoose.Query<T | null, T>;
+    let query = this.model?.findById(id).session(options?.session ? options.session : null) as mongoose.Query<T | null, T>;
     if (options?.populate && query) {
       query = query.populate(options?.populate);
     }
@@ -63,24 +58,19 @@ export class BaseService<T extends Document> {
     return query.lean({ virtuals: true }).exec() as Promise<T | null>;
   }
 
-  protected async findOne(
-    query: FilterQuery<T>,
-    queryOptions: QueryOptions,
-    options?: DbOptions
-  ): Promise<Require_id<FlattenMaps<T>> | null> {
+  protected async findOne(query: FilterQuery<T>, queryOptions: QueryOptions, options?: DbOptions): Promise<Require_id<FlattenMaps<T>> | null> {
     this.validateModel();
-    let mongooseQuery = this.model!.findOne(query, {}, queryOptions).session(
-      options?.session ? options.session : null
-    ) as mongoose.Query<T | null, T>;
+    let mongooseQuery = this.model?.findOne(query, {}, queryOptions).session(options?.session ? options.session : null) as mongoose.Query<
+      T | null,
+      T
+    >;
     if (options?.populate && mongooseQuery) {
       mongooseQuery = mongooseQuery.populate(options?.populate);
     }
     if (options?.hiddenFields && options?.hiddenFields.length > 0 && mongooseQuery) {
       mongooseQuery = mongooseQuery.select(this.getSelectedFields(options?.hiddenFields));
     }
-    return mongooseQuery.lean({ virtuals: true }).exec() as Promise<
-      Require_id<FlattenMaps<T>>
-    > | null;
+    return mongooseQuery.lean({ virtuals: true }).exec() as unknown as Promise<mongoose.Require_id<mongoose.FlattenMaps<T>>> | null;
   }
 
   protected async findAll(
@@ -88,19 +78,13 @@ export class BaseService<T extends Document> {
     page = 1,
     limit = 10,
     populate: PopulateOptions | (string | PopulateOptions)[] = [],
-    session: ClientSession | null = null
+    session: ClientSession | null = null,
   ): Promise<PaginatedResult<T>> {
     this.validateModel();
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
-      this.model!.find(query)
-        .populate(populate)
-        .skip(skip)
-        .limit(limit)
-        .session(session)
-        .lean({ virtuals: true })
-        .exec(),
-      this.model!.countDocuments(query).exec(),
+      this.model?.find(query).populate(populate).skip(skip).limit(limit).session(session).lean({ virtuals: true }).exec(),
+      this.model?.countDocuments(query).exec(),
     ]);
 
     return {
@@ -111,17 +95,14 @@ export class BaseService<T extends Document> {
     };
   }
 
-  protected async updateById(
-    id: ObjectId,
-    updateData: UpdateQuery<T>,
-    session: ClientSession | null = null
-  ): Promise<T | null> {
+  protected async updateById(id: ObjectId, updateData: UpdateQuery<T>, session: ClientSession | null = null): Promise<T | null> {
     this.validateModel();
-    return this.model!.findByIdAndUpdate(id, updateData, {
-      upsert: true,
-      new: true,
-      setDefaultsOnInsert: true,
-    })
+    return this.model
+      ?.findByIdAndUpdate(id, updateData, {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+      })
       .session(session)
       .exec() as Promise<T | null>;
   }
@@ -129,68 +110,53 @@ export class BaseService<T extends Document> {
   protected async updateOne(
     query: FilterQuery<T>,
     updateData: UpdateQuery<T>,
-    session: ClientSession | null = null
+    session: ClientSession | null = null,
   ): Promise<Require_id<FlattenMaps<T>> | null> {
     this.validateModel();
-    return this.model!.findOneAndUpdate(query, updateData, {
-      new: true,
-      upsert: true,
-      setDefaultsOnInsert: true,
-    })
+    return this.model
+      ?.findOneAndUpdate(query, updateData, {
+        new: true,
+        upsert: true,
+        setDefaultsOnInsert: true,
+      })
       .session(session)
       .lean({ virtuals: true })
-      .exec() as Promise<Require_id<FlattenMaps<T>>> | null;
+      .exec() as unknown as Promise<Require_id<FlattenMaps<T>>> | null;
   }
 
-  protected async deleteById(
-    id: ObjectId,
-    session: ClientSession | null = null
-  ): Promise<T | null> {
+  protected async deleteById(id: ObjectId, session: ClientSession | null = null): Promise<T | null> {
     this.validateModel();
-    return this.model!.findByIdAndDelete(id).session(session).exec() as Promise<T | null>;
+    return this.model?.findByIdAndDelete(id).session(session).exec() as Promise<T | null>;
   }
 
-  protected async deleteOne(
-    query: FilterQuery<T>,
-    session: ClientSession | null = null
-  ): Promise<Require_id<FlattenMaps<T>> | null> {
+  protected async deleteOne(query: FilterQuery<T>, session: ClientSession | null = null): Promise<Require_id<FlattenMaps<T>> | null> {
     this.validateModel();
-    return this.model!.findOneAndDelete(query)
-      .session(session)
-      .lean({ virtuals: true })
-      .exec() as Promise<Require_id<FlattenMaps<T>>> | null;
+    return this.model?.findOneAndDelete(query).session(session).lean({ virtuals: true }).exec() as unknown as Promise<
+      Require_id<FlattenMaps<T>>
+    > | null;
   }
 
-  protected async aggregate(
-    pipeline: PipelineStage[],
-    session: ClientSession | null = null
-  ): Promise<any[]> {
+  protected async aggregate(pipeline: PipelineStage[], session: ClientSession | null = null): Promise<any[]> {
     this.validateModel();
-    return this.model!.aggregate(pipeline).session(session).exec();
+    return this.model?.aggregate(pipeline).session(session).exec();
   }
 
-  protected async countDocuments(
-    query: FilterQuery<T>,
-    session: ClientSession | null = null
-  ): Promise<number> {
+  protected async countDocuments(query: FilterQuery<T>, session: ClientSession | null = null): Promise<number> {
     this.validateModel();
-    return this.model!.countDocuments(query).session(session).exec() as Promise<number>;
+    return this.model?.countDocuments(query).session(session).exec() as Promise<number>;
   }
 
-  protected async batchFind(
-    ids: Array<string | ObjectId>,
-    field: string,
-    options?: DbOptions
-  ): Promise<T[]> {
+  protected async batchFind(ids: Array<string | ObjectId>, field: string, options?: DbOptions): Promise<T[]> {
     this.validateModel();
-    return this.model!.find({ [field]: { $in: ids } } as FilterQuery<T>)
+    return this.model
+      ?.find({ [field]: { $in: ids } } as FilterQuery<T>)
       .session(options?.session || null)
       .exec() as Promise<T[]>;
   }
 
   protected async batchWrite(operations: any[], session?: ClientSession): Promise<any> {
     this.validateModel();
-    return this.model!.bulkWrite(operations, { session });
+    return this.model?.bulkWrite(operations, { session });
   }
 
   protected async startTransaction(connection: Connection): Promise<ClientSession> {
@@ -215,7 +181,7 @@ export class BaseService<T extends Document> {
     if (!params) return query;
 
     Object.assign(
-      query
+      query,
       // Example:
       // Array.isArray(params.Category) && { Category: { $in: params.Category } },
       // params.Description && { Description: new RegExp(params.Description, 'i') },
@@ -236,7 +202,7 @@ class MongoDBClient {
 
   public static async getConnection(uri: string, clientName: string): Promise<Connection> {
     if (this.connections.has(uri)) {
-      const connection = this.connections.get(uri)!;
+      const connection = this.connections.get(uri);
       if (connection.readyState === 1) {
         // 1 = connected
         return connection;
@@ -244,9 +210,7 @@ class MongoDBClient {
     }
 
     try {
-      const connection = await mongoose
-        .createConnection(uri)
-        .asPromise();
+      const connection = await mongoose.createConnection(uri).asPromise();
       this.connections.set(uri, connection);
       return connection;
     } catch (err) {
@@ -257,7 +221,7 @@ class MongoDBClient {
 
   public static async closeConnection(uri: string): Promise<void> {
     if (this.connections.has(uri)) {
-      const connection = this.connections.get(uri)!;
+      const connection = this.connections.get(uri);
       await connection.close();
       this.connections.delete(uri);
     }
@@ -299,7 +263,7 @@ export class MongoApiService<T extends Document> extends MongoService<T> {
     if (!this.model) {
       this.model = this.connection.model<T>(this.modelName, this.schema);
     }
-    return this.connection
+    return this.connection;
   }
 
   /**
@@ -311,12 +275,7 @@ export class MongoApiService<T extends Document> extends MongoService<T> {
     this.model = null;
   }
 
-  private createResponse<U>(
-    status: boolean,
-    data: U | null = null,
-    message?: string,
-    error?: any
-  ): ServiceResponse<U> {
+  private createResponse<U>(status: boolean, data: U | null = null, message?: string, error?: any): ServiceResponse<U> {
     if (error) {
       console.error({ error });
     } else {
@@ -336,7 +295,7 @@ export class MongoApiService<T extends Document> extends MongoService<T> {
 
   async findByIdMongo(id: string, options?: DbOptions): Promise<ServiceResponse<T | null>> {
     try {
-      const objectId = new Types.ObjectId(id) as unknown as Schema.Types.ObjectId;
+      const objectId = new ObjectId(id);
       const data = await this.findById(objectId, options);
       if (!data) {
         return this.createResponse(false, null, 'Record not found');
@@ -350,7 +309,7 @@ export class MongoApiService<T extends Document> extends MongoService<T> {
   async findOneMongo(
     query: FilterQuery<T>,
     queryOptions: QueryOptions,
-    options?: DbOptions
+    options?: DbOptions,
   ): Promise<ServiceResponse<Require_id<FlattenMaps<T>> | null>> {
     try {
       const response = await this.findOne(query, queryOptions, options);
@@ -360,27 +319,20 @@ export class MongoApiService<T extends Document> extends MongoService<T> {
     }
   }
 
-  async findMongo(
-    query: FilterQuery<T>,
-    options?: DbOptions
-  ): Promise<ServiceResponse<Require_id<FlattenMaps<T>>[] | null>> {
+  async findMongo(query: FilterQuery<T>, options?: DbOptions): Promise<ServiceResponse<Require_id<FlattenMaps<T>>[] | null>> {
     try {
       const { data, total, page, limit } = await this.findAll(
         query,
         options?.page || 1,
         options?.limit || 10,
         options?.populate || [],
-        options?.session || null
+        options?.session || null,
       );
       if (data.length === 0) {
         return this.createResponse(true, [], 'No records found');
       }
       return {
-        ...this.createResponse<Require_id<FlattenMaps<T>>[]>(
-          true,
-          data,
-          'Records found successfully'
-        ),
+        ...this.createResponse<Require_id<FlattenMaps<T>>[]>(true, data, 'Records found successfully'),
         total,
         page,
         limit,
@@ -390,13 +342,9 @@ export class MongoApiService<T extends Document> extends MongoService<T> {
     }
   }
 
-  async updateByIdMongo(
-    id: string,
-    updateData: UpdateQuery<T>,
-    options?: DbOptions
-  ): Promise<ServiceResponse<T | null>> {
+  async updateByIdMongo(id: string, updateData: UpdateQuery<T>, options?: DbOptions): Promise<ServiceResponse<T | null>> {
     try {
-      const objectId = new Types.ObjectId(id) as unknown as Schema.Types.ObjectId;
+      const objectId = new ObjectId(id);
       const response = await this.updateById(objectId, updateData, options?.session);
       return this.createResponse<T>(!!response, response, 'Record updated successfully');
     } catch (error) {
@@ -407,15 +355,11 @@ export class MongoApiService<T extends Document> extends MongoService<T> {
   async updateOneMongo(
     query: FilterQuery<T>,
     update: UpdateQuery<T>,
-    options?: DbOptions
+    options?: DbOptions,
   ): Promise<ServiceResponse<Require_id<FlattenMaps<T>> | null>> {
     try {
       const response = await this.updateOne(query, update, options?.session);
-      return this.createResponse<Require_id<FlattenMaps<T>>>(
-        !!response,
-        response,
-        'Record updated successfully'
-      );
+      return this.createResponse<Require_id<FlattenMaps<T>>>(!!response, response, 'Record updated successfully');
     } catch (error) {
       return this.createResponse(false, null, 'Failed to update record', error);
     }
@@ -423,7 +367,7 @@ export class MongoApiService<T extends Document> extends MongoService<T> {
 
   async deleteByIdMongo(id: string, options?: DbOptions): Promise<ServiceResponse<T | null>> {
     try {
-      const objectId = new Types.ObjectId(id) as unknown as Schema.Types.ObjectId;
+      const objectId = new ObjectId(id);
       const response = await this.deleteById(objectId, options?.session);
       return this.createResponse<T>(!!response, response, 'Record deleted successfully');
     } catch (error) {
@@ -431,13 +375,9 @@ export class MongoApiService<T extends Document> extends MongoService<T> {
     }
   }
 
-  async findInBatch(
-    ids: string[],
-    field: string,
-    options?: DbOptions
-  ): Promise<ServiceResponse<T[]>> {
+  async findInBatch(ids: string[], field: string, options?: DbOptions): Promise<ServiceResponse<T[]>> {
     try {
-      const objectIds = ids.map((id) => new Types.ObjectId(id) as unknown as Schema.Types.ObjectId);
+      const objectIds = ids.map(id => new ObjectId(id));
       const data = await this.batchFind(objectIds, field, options);
       if (data.length === 0) {
         return this.createResponse(true, [], 'No records found');
@@ -448,26 +388,17 @@ export class MongoApiService<T extends Document> extends MongoService<T> {
     }
   }
 
-  async writeInBatch(
-    data: Partial<T>[],
-    batchSize: number = 20,
-    options?: DbOptions
-  ): Promise<ServiceResponse<T[] | null>> {
+  async writeInBatch(data: Partial<T>[], batchSize = 20, options?: DbOptions): Promise<ServiceResponse<T[] | null>> {
     const batchedOperations = [];
     try {
       for (let i = 0; i < data.length; i += batchSize) {
-        const batchData: Array<{ insertOne: { document: Partial<T> } }> = data
-          .slice(i, i + batchSize)
-          .map((item) => ({
-            insertOne: { document: item },
-          }));
+        const batchData: Array<{ insertOne: { document: Partial<T> } }> = data.slice(i, i + batchSize).map(item => ({
+          insertOne: { document: item },
+        }));
         batchedOperations.push(...batchData);
       }
 
-      const result = await this.batchWrite(
-        batchedOperations,
-        options?.session ? options.session : undefined
-      );
+      const result = await this.batchWrite(batchedOperations, options?.session ? options.session : undefined);
       return this.createResponse<T[]>(true, result, 'Records written successfully');
     } catch (error) {
       return this.createResponse(false, null, 'Failed to write records', error);

@@ -1,4 +1,4 @@
-import { ClientSession, PopulateOptions, FlattenMaps, Require_id, Schema, Document } from '../../services';
+import { ClientSession, PopulateOptions, FlattenMaps, Require_id, Schema, Document } from '../services';
 
 export enum ClientNames {
   AUTH = 'auth',

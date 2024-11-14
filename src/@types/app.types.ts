@@ -1,9 +1,5 @@
 import { Model } from 'mongoose';
 
-export * from './redis.types';
-
-export * from './mongo.types';
-
 export const applicationJsonType = 'application/json';
 
 export const applicationXmlType = 'application/xml';

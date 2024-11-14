@@ -1,16 +1,16 @@
 import { NextFunction, Request, Response } from 'express';
 import { SignInValidationSchema } from '@/validations/auth.validation';
 import { Utils, ApiError } from '@/utils';
-import { AuthDocument, AuthModel, authSchema } from '@/mongodb';
+import { UserDocument, UserModel, UserSchema } from '@/mongodb';
 import { MongoApiService } from '@/services';
-import { IsTokenBlacklisted } from '@/utils/validateEnv';
+import { IsTokenBlacklisted } from '@/utils';
 import { StatusCode, LogUsers, LogAction, LogStatus, GenericAnyType } from '@/@types';
 
 export const AuthenticationMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = await Utils.checkToken(req);
     if (!token) {
-      return Utils.apiResponse<AuthDocument>(
+      return Utils.apiResponse<UserDocument>(
         res,
         StatusCode.UNAUTHORIZED,
         { devError: { token } },
@@ -19,7 +19,7 @@ export const AuthenticationMiddleware = async (req: Request, res: Response, next
           action: LogAction.VERIFY,
           message: 'invalid token',
           status: LogStatus.FAIL,
-          serviceLog: AuthModel,
+          serviceLog: UserModel,
           options: {},
         },
       );
@@ -28,7 +28,7 @@ export const AuthenticationMiddleware = async (req: Request, res: Response, next
     const tokenData = await Utils.verifyToken(token);
 
     if (!tokenData) {
-      return Utils.apiResponse<AuthDocument>(
+      return Utils.apiResponse<UserDocument>(
         res,
         StatusCode.UNAUTHORIZED,
         { devError: { tokenData } },
@@ -37,7 +37,7 @@ export const AuthenticationMiddleware = async (req: Request, res: Response, next
           action: LogAction.VERIFY,
           message: 'invalid token',
           status: LogStatus.FAIL,
-          serviceLog: AuthModel,
+          serviceLog: UserModel,
           options: {},
         },
       );
@@ -46,7 +46,7 @@ export const AuthenticationMiddleware = async (req: Request, res: Response, next
     res.locals.tokenData = tokenData;
     next();
   } catch (error: GenericAnyType) {
-    return Utils.apiResponse<AuthDocument>(
+    return Utils.apiResponse<UserDocument>(
       res,
       StatusCode.INTERNAL_SERVER_ERROR,
       { devError: error.message || JSON.stringify(error) },
@@ -55,7 +55,7 @@ export const AuthenticationMiddleware = async (req: Request, res: Response, next
         action: LogAction.VERIFY,
         message: 'server error',
         status: LogStatus.FAIL,
-        serviceLog: AuthModel,
+        serviceLog: UserModel,
         options: {},
       },
     );
@@ -77,7 +77,7 @@ export const SignInMiddleware = async (req: Request, res: Response, next: NextFu
 
 export const CheckTokenMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authService = new MongoApiService<AuthDocument>('auth', 'auths', authSchema);
+    const authService = new MongoApiService<UserDocument>('auth', 'auths', UserSchema);
     const token = await Utils.checkToken(req);
 
     console.log({ token, IsTokenBlacklisted: IsTokenBlacklisted(token) });
