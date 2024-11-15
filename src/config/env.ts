@@ -15,6 +15,7 @@ export const CREDENTIALS = process.env.CREDENTIALS === 'true';
 
 export const {
   NODE_ENV,
+  BASE_URL,
   PORT,
   JWT_SECRET_KEY,
   ORIGIN,
@@ -31,7 +32,10 @@ export const {
   REDIS_URL,
   MONGO_URI,
   PAYPAL_URL,
+  PAYPAL_CLIENT_ID,
+  PAYPAL_CLIENT_SECRET,
   STRIPE_URL,
+  STRIPE_SECRET_KEY,
   APPLICATION_NAME,
   GOOGLE_CLIENT_ID,
 } = process.env;
