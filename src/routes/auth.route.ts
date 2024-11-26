@@ -4,7 +4,7 @@ import { Router } from 'express';
 import AuthController from '@/controllers/auth.controller';
 
 /** Import Middlewares */
-import { SignInMiddleware, CheckTokenMiddleware, SendOtpMiddleware } from '@/middlewares/auth.middleware';
+import { SignInMiddleware, CheckTokenMiddleware, SendOtpMiddleware, VerifyOtpMiddleware } from '@/middlewares/auth.middleware';
 
 /** Import interfaces */
 import { Routes } from '@/interfaces';
@@ -20,6 +20,7 @@ export class AuthRoute implements Routes {
   private initializeRoutes() {
     this.router.post(`${this.path}/signin`, SignInMiddleware, AuthController.SigninWithEmailAndPassword);
     this.router.post(`${this.path}/sendOtp`, SendOtpMiddleware, AuthController.SendOtp);
+    this.router.post(`${this.path}/verifyOtp`, VerifyOtpMiddleware, AuthController.VerifyOtp);
     this.router.get(`${this.path}/signout`, CheckTokenMiddleware, AuthController.Signout);
   }
 }

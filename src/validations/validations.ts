@@ -7,7 +7,7 @@ export const ValidateRequests = Joi.object({
   }),
 });
 
-export const ValidateSendOtp = Joi.object({
+export const ValidateOtpRequest = Joi.object({
   email: Joi.string().email().required().label('email').messages({
     string: 'valid email is required',
   }),
@@ -18,4 +18,7 @@ export const ValidateSendOtp = Joi.object({
     .messages({
       string: `otp type of 'password' or 'signup' is required`,
     }),
+  otp: Joi.string().optional().label('otp').messages({
+    string: 'otp is of type string',
+  }),
 });

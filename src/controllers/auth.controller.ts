@@ -25,8 +25,6 @@ class AuthController extends BaseController {
       /************ Extract validated sign-in data ************/
       const validatedSendOtpRequestBody = res.locals.validatedSendOtpRequestBody;
 
-      console.log({ validatedSendOtpRequestBody });
-
       const { email, OTPType } = validatedSendOtpRequestBody;
 
       /************ Find user by email or phone number ************/
@@ -69,7 +67,6 @@ class AuthController extends BaseController {
       }
 
       const otp = NODE_ENV !== 'production' ? '123456' : Utils.generateOtp();
-      console.log(otp);
 
       const createdOtp = await AuthController.otpService.createMongo({ otp: `${email}-${otp}`, email });
 
@@ -140,24 +137,40 @@ class AuthController extends BaseController {
     try {
       /************ Extract validated sign-in data ************/
       const validatedVerifyOtpRequestBody = res.locals.validatedVerifyOtpRequestBody;
+
       const { email, OTPType, otp } = validatedVerifyOtpRequestBody;
 
       /************ Find user by email or phone number ************/
       const otpData = await AuthController.otpService.findOneMongo(
         {
           email,
-          otp,
+          otp: `${email}-${otp}`,
+          isValid: false,
         },
         { session },
       );
+
+      if (!otpData.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'invalid request.',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
 
       if ((OTPType as OtpRequestType) === OtpRequestType.PASSWORD) {
         if (!otpData.status) {
           return AuthController.abortTransactionWithResponse(
             res,
-            StatusCode.NOT_FOUND,
+            StatusCode.BAD_REQUEST,
             session,
-            'not found',
+            'invalid request.',
             LogStatus.FAIL,
             ...AuthController.staticsInResponse,
             {
@@ -180,6 +193,20 @@ class AuthController extends BaseController {
           { session, hiddenFields: ['password'] },
         );
 
+        if (!user.status) {
+          return AuthController.abortTransactionWithResponse(
+            res,
+            StatusCode.INTERNAL_SERVER_ERROR,
+            session,
+            'failed to validate user.',
+            LogStatus.FAIL,
+            ...AuthController.staticsInResponse,
+            {
+              email: '',
+            },
+          );
+        }
+
         return Utils.apiResponse<UserDocument>(
           res,
           StatusCode.OK,
@@ -190,7 +217,7 @@ class AuthController extends BaseController {
           {
             user: LogUsers.AUTH,
             action: LogAction.SIGNIN,
-            message: 'otp verified.',
+            message: 'password otp verified.',
             status: LogStatus.SUCCESS,
             serviceLog: UserModel,
             options: {
@@ -226,8 +253,8 @@ class AuthController extends BaseController {
         {},
         {
           user: LogUsers.AUTH,
-          action: LogAction.SIGNIN,
-          message: 'otp sent.',
+          action: LogAction.VERIFY_OTP,
+          message: 'email otp verified.',
           status: LogStatus.SUCCESS,
           serviceLog: UserModel,
           options: {

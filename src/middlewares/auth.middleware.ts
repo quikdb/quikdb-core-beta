@@ -84,11 +84,7 @@ export const SendOtpMiddleware = async (req: Request, res: Response, next: NextF
       next(new ApiError(error, 'AuthMiddleware', 401));
     }
 
-    console.log({ value });
-
     const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
-
-    console.log({ decryptedRequest });
 
     const requestObject = JSON.parse(decryptedRequest);
 
@@ -103,10 +99,21 @@ export const SendOtpMiddleware = async (req: Request, res: Response, next: NextF
 export const VerifyOtpMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
+
     if (error) {
       next(new ApiError(error, 'AuthMiddleware', 401));
     }
-    res.locals.validatedVerifyOtpRequestBody = value;
+
+    console.log({ value });
+
+    const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+    console.log({ decryptedRequest });
+
+    const requestObject = JSON.parse(decryptedRequest);
+
+    res.locals.validatedVerifyOtpRequestBody = requestObject;
+
     next();
   } catch (error) {
     next(new ApiError(error.message || error, 'SignInMiddleware', 401));

@@ -293,7 +293,7 @@ export class MongoApiService<T extends Document> extends MongoService<T> {
   ): Promise<ServiceResponse<Require_id<FlattenMaps<T>> | null>> {
     try {
       const response = await this.findOne(query, queryOptions, options);
-      return this.createResponse<Require_id<FlattenMaps<T>>>(!!response, response, 'Record found');
+      return this.createResponse<Require_id<FlattenMaps<T>>>(!!response, response, !!response ? 'Record found' : 'Record not found');
     } catch (error) {
       return this.createResponse(false, null, 'Failed to find record', error);
     }
