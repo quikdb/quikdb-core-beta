@@ -4,7 +4,8 @@ console.log({
   env_path: `.env.${process.env.NODE_ENV || 'development'}.local`,
 });
 
-config(process.env.NODE_ENV === 'production' ? { path: '.env' } : { path: `.env.${process.env.NODE_ENV || 'development'}.local` });
+// config(process.env.NODE_ENV === 'production' ? { path: '.env' } : { path: `.env.${process.env.NODE_ENV || 'development'}.local` });
+config();
 
 export const MONGO_URIS = {
   auth: process.env.AUTH_MONGO_URI,
