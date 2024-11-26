@@ -16,7 +16,7 @@ import mongoose, {
 import { DbOptions, GenericAnyType, PaginatedResult, ServiceResponse, StatusCode } from '../@types';
 import { ApiError } from '../utils';
 import { ObjectId } from 'bson';
-import { UserDocument, UserSchema } from '@/mongodb';
+import { OtpDocument, OtpSchema, UserDocument, UserSchema } from '@/mongodb';
 
 // Define MongoDB URIs based on client names
 export const MONGO_URIS: { [clientName: string]: string } = {
@@ -438,3 +438,4 @@ export {
 };
 
 export const UserMongoService = new MongoApiService<UserDocument>('user', 'Users', UserSchema);
+export const OtpMongoService = new MongoApiService<OtpDocument>('otp', 'OTPs', OtpSchema);

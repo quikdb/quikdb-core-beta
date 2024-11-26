@@ -75,6 +75,32 @@ export const SignInMiddleware = async (req: Request, res: Response, next: NextFu
   }
 };
 
+export const SendOtpMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
+    if (error) {
+      next(new ApiError(error, 'AuthMiddleware', 401));
+    }
+    res.locals.validatedVerifyOtpRequestBody = value;
+    next();
+  } catch (error) {
+    next(new ApiError(error.message || error, 'SignInMiddleware', 401));
+  }
+};
+
+export const VerifyOtpMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
+    if (error) {
+      next(new ApiError(error, 'AuthMiddleware', 401));
+    }
+    res.locals.validatedVerifyOtpRequestBody = value;
+    next();
+  } catch (error) {
+    next(new ApiError(error.message || error, 'SignInMiddleware', 401));
+  }
+};
+
 export const CheckTokenMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authService = new MongoApiService<UserDocument>('auth', 'auths', UserSchema);

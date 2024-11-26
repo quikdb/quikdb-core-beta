@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import { UserDocument, UserModel } from '@/mongodb';
-import { LogAction, LogStatus, LogUsers, StatusCode } from '@/@types';
+import { LogAction, LogStatus, LogUsers, StatusCode, OtpRequestType } from '@/@types';
 import { Utils } from '@/utils';
 import { Model } from '@/services';
 import { BaseController } from './base.controller';
 import { AddToBlacklist } from '@/utils';
+import { NODE_ENV } from '@/config';
 
 /**
  * AuthController handles the sign-in process for users.
@@ -12,6 +13,234 @@ import { AddToBlacklist } from '@/utils';
  */
 class AuthController extends BaseController {
   private static staticsInResponse: [LogUsers, LogAction, Model<UserDocument>] = [LogUsers.AUTH, LogAction.SIGNIN, UserModel];
+
+  /**
+   * Handles the user signin process using email and pw.
+   * @param req - Express request object containing the user sign-up data.
+   * @param res - Express response object to send the response.
+   */
+  async SendOtp(req: Request, res: Response) {
+    const session = null;
+    try {
+      /************ Extract validated sign-in data ************/
+      const validatedSendOtpRequestBody = res.locals.validatedSendOtpRequestBody;
+      const { email, OTPType } = validatedSendOtpRequestBody;
+
+      /************ Find user by email or phone number ************/
+      const user = await AuthController.userService.findOneMongo(
+        {
+          email,
+          deleted: false,
+        },
+        { session, hiddenFields: ['password'] },
+      );
+
+      if ((OTPType as OtpRequestType) === OtpRequestType.PASSWORD) {
+        if (!user.status) {
+          return AuthController.abortTransactionWithResponse(
+            res,
+            StatusCode.BAD_REQUEST,
+            session,
+            'user not found. please sign up.',
+            LogStatus.FAIL,
+            ...AuthController.staticsInResponse,
+            {
+              email: '',
+            },
+          );
+        }
+      } else {
+        if (user.status) {
+          return AuthController.abortTransactionWithResponse(
+            res,
+            StatusCode.BAD_REQUEST,
+            session,
+            'already registered. please login',
+            LogStatus.FAIL,
+            ...AuthController.staticsInResponse,
+            {
+              email: '',
+            },
+          );
+        }
+      }
+
+      const otp = NODE_ENV !== 'production' ? '123456' : Utils.generateOtp();
+      console.log(otp);
+
+      await AuthController.otpService.createMongo({ otp: `${email}-${otp}`, email });
+
+      /************ Commit the transaction and send a successful response ************/
+      await session?.commitTransaction();
+      session?.endSession();
+
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.OK,
+        {},
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.SIGNIN,
+          message: 'otp sent.',
+          status: LogStatus.SUCCESS,
+          serviceLog: UserModel,
+          options: {
+            email,
+          },
+        },
+      );
+    } catch (error) {
+      console.log(error);
+      !session.transaction.isActive && (await session.abortTransaction());
+      session?.endSession();
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.UNAUTHORIZED,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.SIGNUP,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: UserModel,
+          options: {},
+        },
+      );
+    } finally {
+      session?.endSession();
+    }
+  }
+
+  /**
+   * Handles the user signin process using email and pw.
+   * @param req - Express request object containing the user sign-up data.
+   * @param res - Express response object to send the response.
+   */
+  async VerifyOtp(req: Request, res: Response) {
+    const session = null;
+    try {
+      /************ Extract validated sign-in data ************/
+      const validatedVerifyOtpRequestBody = res.locals.validatedVerifyOtpRequestBody;
+      const { email, OTPType, otp } = validatedVerifyOtpRequestBody;
+
+      /************ Find user by email or phone number ************/
+      const otpData = await AuthController.otpService.findOneMongo(
+        {
+          email,
+          otp,
+        },
+        { session },
+      );
+
+      if ((OTPType as OtpRequestType) === OtpRequestType.PASSWORD) {
+        if (!otpData.status) {
+          return AuthController.abortTransactionWithResponse(
+            res,
+            StatusCode.NOT_FOUND,
+            session,
+            'not found',
+            LogStatus.FAIL,
+            ...AuthController.staticsInResponse,
+            {
+              email: '',
+            },
+          );
+        }
+
+        const token = Utils.createToken({
+          email,
+          otp,
+        });
+
+        /************ Find user by email or phone number ************/
+        const user = await AuthController.userService.findOneMongo(
+          {
+            email,
+            deleted: false,
+          },
+          { session, hiddenFields: ['password'] },
+        );
+
+        return Utils.apiResponse<UserDocument>(
+          res,
+          StatusCode.OK,
+          {
+            token,
+            user: user.data,
+          },
+          {
+            user: LogUsers.AUTH,
+            action: LogAction.SIGNIN,
+            message: 'otp verified.',
+            status: LogStatus.SUCCESS,
+            serviceLog: UserModel,
+            options: {
+              email,
+            },
+          },
+        );
+      }
+
+      const updatedOtpData = await AuthController.otpService.updateOneMongo({ email }, { isValid: true }, { session });
+
+      if (!updatedOtpData.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.NOT_FOUND,
+          session,
+          'failed to update otp data.',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Commit the transaction and send a successful response ************/
+      await session?.commitTransaction();
+      session?.endSession();
+
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.OK,
+        {},
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.SIGNIN,
+          message: 'otp sent.',
+          status: LogStatus.SUCCESS,
+          serviceLog: UserModel,
+          options: {
+            email,
+          },
+        },
+      );
+    } catch (error) {
+      console.log(error);
+      !session.transaction.isActive && (await session.abortTransaction());
+      session?.endSession();
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.UNAUTHORIZED,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.SIGNUP,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: UserModel,
+          options: {},
+        },
+      );
+    } finally {
+      session?.endSession();
+    }
+  }
 
   /**
    * Handles the user signin process using email and pw.
@@ -75,8 +304,8 @@ class AuthController extends BaseController {
       // send sign in notification.
 
       /************ Commit the transaction and send a successful response ************/
-      await session.commitTransaction();
-      session.endSession();
+      await session?.commitTransaction();
+      session?.endSession();
 
       return Utils.apiResponse<UserDocument>(
         res,
@@ -98,7 +327,7 @@ class AuthController extends BaseController {
     } catch (error) {
       console.log(error);
       !session.transaction.isActive && (await session.abortTransaction());
-      session.endSession();
+      session?.endSession();
 
       /************ Send an error response ************/
       return Utils.apiResponse<UserDocument>(
@@ -115,7 +344,7 @@ class AuthController extends BaseController {
         },
       );
     } finally {
-      session.endSession();
+      session?.endSession();
     }
   }
 
@@ -190,8 +419,8 @@ class AuthController extends BaseController {
       // send sign in notification.
 
       /************ Commit the transaction and send a successful response ************/
-      await session.commitTransaction();
-      session.endSession();
+      await session?.commitTransaction();
+      session?.endSession();
 
       return Utils.apiResponse<UserDocument>(
         res,
@@ -213,7 +442,7 @@ class AuthController extends BaseController {
     } catch (error) {
       console.log(error);
       !session.transaction.isActive && (await session.abortTransaction());
-      session.endSession();
+      session?.endSession();
 
       /************ Send an error response ************/
       return Utils.apiResponse<UserDocument>(
@@ -230,7 +459,7 @@ class AuthController extends BaseController {
         },
       );
     } finally {
-      session.endSession();
+      session?.endSession();
     }
   }
 
@@ -330,8 +559,8 @@ class AuthController extends BaseController {
       // send sign in notification.
 
       /************ Commit the transaction and send a successful response ************/
-      await session.commitTransaction();
-      session.endSession();
+      await session?.commitTransaction();
+      session?.endSession();
 
       return Utils.apiResponse<UserDocument>(
         res,
@@ -353,7 +582,7 @@ class AuthController extends BaseController {
     } catch (error) {
       console.log(error);
       !session.transaction.isActive && (await session.abortTransaction());
-      session.endSession();
+      session?.endSession();
 
       /************ Send an error response ************/
       return Utils.apiResponse<UserDocument>(
@@ -370,7 +599,7 @@ class AuthController extends BaseController {
         },
       );
     } finally {
-      session.endSession();
+      session?.endSession();
     }
   }
 

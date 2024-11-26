@@ -233,4 +233,13 @@ export class Utils {
 
     return this.replaceTemplateVariables(templateString, variables);
   }
+
+  static generateOtp(): string {
+    let otp = '';
+    for (let i = 0; i < 6; i++) {
+      const digit = Math.floor(Math.random() * 10); // Generates a random digit from 0 to 9
+      otp += digit.toString();
+    }
+    return otp;
+  }
 }
