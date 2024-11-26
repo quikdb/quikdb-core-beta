@@ -1,10 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
 import { ValidateRequests } from '@/validations/validations';
-import { Utils, ApiError } from '@/utils';
-import { UserDocument, UserModel, UserSchema } from '@/mongodb';
+import { Utils, ApiError, CryptoUtils } from '@/utils';
+import { UserDocument, UserModel } from '@/services/mongodb';
 import { MongoApiService } from '@/services';
 import { IsTokenBlacklisted } from '@/utils';
 import { StatusCode, LogUsers, LogAction, LogStatus, GenericAnyType } from '@/@types';
+import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER } from '@/config';
 
 export const AuthenticationMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -78,10 +79,21 @@ export const SignInMiddleware = async (req: Request, res: Response, next: NextFu
 export const SendOtpMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
+
     if (error) {
       next(new ApiError(error, 'AuthMiddleware', 401));
     }
-    res.locals.validatedVerifyOtpRequestBody = value;
+
+    console.log({ value });
+
+    const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+    console.log({ decryptedRequest });
+
+    const requestObject = JSON.parse(decryptedRequest);
+
+    res.locals.validatedSendOtpRequestBody = requestObject;
+
     next();
   } catch (error) {
     next(new ApiError(error.message || error, 'SignInMiddleware', 401));
@@ -103,7 +115,7 @@ export const VerifyOtpMiddleware = async (req: Request, res: Response, next: Nex
 
 export const CheckTokenMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authService = new MongoApiService<UserDocument>('auth', 'auths', UserSchema);
+    const authService = new MongoApiService<UserDocument>(UserModel);
     const token = await Utils.checkToken(req);
 
     console.log({ token, IsTokenBlacklisted: IsTokenBlacklisted(token) });

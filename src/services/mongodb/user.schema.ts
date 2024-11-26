@@ -1,9 +1,9 @@
 import { UserType } from '@/@types';
-import mongoose, { Document, Schema } from 'mongoose';
+import * as mongoose from 'mongoose';
 
-type UserDocument = UserType & Document;
+type UserDocument = UserType & mongoose.Document;
 
-const CanisterDetailsSchema = new Schema({
+const CanisterDetailsSchema = new mongoose.Schema({
   name: { type: String, required: true },
   url: { type: String, required: true },
   owner: { type: String, required: true },
@@ -12,7 +12,7 @@ const CanisterDetailsSchema = new Schema({
   controllers: { type: [String], required: true },
 });
 
-const UserSchema: Schema = new Schema(
+const UserSchema: mongoose.Schema = new mongoose.Schema(
   {
     username: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },

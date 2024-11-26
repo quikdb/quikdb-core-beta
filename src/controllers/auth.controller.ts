@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { UserDocument, UserModel } from '@/mongodb';
+import { UserDocument, UserModel } from '@/services/mongodb';
 import { LogAction, LogStatus, LogUsers, StatusCode, OtpRequestType } from '@/@types';
 import { Utils } from '@/utils';
 import { Model } from '@/services';
@@ -24,6 +24,9 @@ class AuthController extends BaseController {
     try {
       /************ Extract validated sign-in data ************/
       const validatedSendOtpRequestBody = res.locals.validatedSendOtpRequestBody;
+
+      console.log({ validatedSendOtpRequestBody });
+
       const { email, OTPType } = validatedSendOtpRequestBody;
 
       /************ Find user by email or phone number ************/
@@ -68,7 +71,21 @@ class AuthController extends BaseController {
       const otp = NODE_ENV !== 'production' ? '123456' : Utils.generateOtp();
       console.log(otp);
 
-      await AuthController.otpService.createMongo({ otp: `${email}-${otp}`, email });
+      const createdOtp = await AuthController.otpService.createMongo({ otp: `${email}-${otp}`, email });
+
+      if (!createdOtp.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.INTERNAL_SERVER_ERROR,
+          session,
+          'Failed to send OTP',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
 
       /************ Commit the transaction and send a successful response ************/
       await session?.commitTransaction();
@@ -80,7 +97,7 @@ class AuthController extends BaseController {
         {},
         {
           user: LogUsers.AUTH,
-          action: LogAction.SIGNIN,
+          action: LogAction.SEND,
           message: 'otp sent.',
           status: LogStatus.SUCCESS,
           serviceLog: UserModel,

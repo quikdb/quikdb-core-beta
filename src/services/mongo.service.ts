@@ -16,12 +16,12 @@ import mongoose, {
 import { DbOptions, GenericAnyType, PaginatedResult, ServiceResponse, StatusCode } from '../@types';
 import { ApiError } from '../utils';
 import { ObjectId } from 'bson';
-import { OtpDocument, OtpSchema, UserDocument, UserSchema } from '@/mongodb';
+import { OtpDocument, OTPModel, UserDocument, UserModel } from '@/services/mongodb';
+import { AUTH_MONGO_URI, MongoDBClient } from '@/config';
 
 // Define MongoDB URIs based on client names
 export const MONGO_URIS: { [clientName: string]: string } = {
-  auth: process.env.AUTH_MONGO_URI || '',
-  service: process.env.SERVICE_MONGO_URI || '',
+  auth: AUTH_MONGO_URI || '',
   // Add more clients and their URIs as needed
 };
 
@@ -192,88 +192,67 @@ export class BaseService<T extends Document> {
   }
 }
 
-export class MongoService<T extends Document> extends BaseService<T> {
-  constructor(model?: Model<T>) {
+export class MongoService<T extends mongoose.Document> extends BaseService<T> {
+  constructor(model?: mongoose.Model<T>) {
     super(model);
   }
 }
 
-class MongoDBClient {
-  private static connections: Map<string, Connection> = new Map();
-
-  public static async getConnection(uri: string, clientName: string): Promise<Connection> {
-    if (this.connections.has(uri)) {
-      const connection = this.connections.get(uri);
-      if (connection.readyState === 1) {
-        // 1 = connected
-        return connection;
-      }
-    }
-
-    try {
-      const connection = await mongoose.createConnection(uri).asPromise();
-      this.connections.set(uri, connection);
-      return connection;
-    } catch (err) {
-      console.error(`Error connecting to MongoDB at ${clientName}:`, err);
-      throw err;
-    }
-  }
-
-  public static async closeConnection(uri: string): Promise<void> {
-    if (this.connections.has(uri)) {
-      const connection = this.connections.get(uri);
-      await connection.close();
-      this.connections.delete(uri);
-    }
-  }
-}
-
 export class MongoApiService<T extends Document> extends MongoService<T> {
-  private connection: Connection | null = null;
-  private uri: string;
-  private modelName: string;
-  private schema: Schema;
+  private connection: mongoose.Connection;
+  private session: mongoose.ClientSession;
+  private client: any;
 
-  /**
-   * Constructs a new MongoApiService.
-   * @param clientName The name of the client to determine which MongoDB URI to use.
-   * @param modelName The name of the Mongoose model.
-   * @param schema The Mongoose schema for the model.
-   */
-  constructor(clientName: string, modelName: string, schema: Schema<T>) {
-    const uri = MONGO_URIS[clientName];
-    if (!uri) {
-      throw new Error(`MongoDB URI for client "${clientName}" is not defined.`);
-    }
-    super(); // Do not pass the model here
-    this.uri = uri;
-    this.modelName = modelName;
-    this.schema = schema;
+  constructor(model?: mongoose.Model<T>) {
+    super(model);
   }
 
   /**
    * Initializes the connection and model.
    */
-  async setup(clientName: string) {
-    this.connection = await MongoDBClient.getConnection(this.uri, clientName);
-    if (!this.connection) {
-      throw new Error('Failed to connect to MongoDB');
+  // async setup(clientName: string) {
+  //   this.connection = await MongoDBClient.getConnection(this.uri, clientName);
+  //   if (!this.connection) {
+  //     throw new Error('Failed to connect to MongoDB');
+  //   }
+
+  //   if (!this.model) {
+  //     this.model = this.connection.model<T>(this.modelName, this.schema);
+  //   }
+  //   return this.connection;
+  // }
+
+  async setup() {
+    const client = await MongoDBClient.getInstance();
+    if (!client) {
+      console.error('Failed to get MongoDBClient instance');
+      return;
     }
 
-    if (!this.model) {
-      this.model = this.connection.model<T>(this.modelName, this.schema);
+    const connection = await client.connect();
+    if (!connection) {
+      console.error('Failed to connect to MongoDB');
+      return;
     }
-    return this.connection;
+
+    this.connection = connection;
+    this.client = client;
+    return this.client;
   }
 
-  /**
-   * Closes the MongoDB connection.
-   */
-  async close() {
-    await MongoDBClient.closeConnection(this.uri);
-    this.connection = null;
-    this.model = null;
+  async startMongoTransaction() {
+    await this.setup();
+    const session = await this.startTransaction(this.connection);
+    this.session = session;
+    return session;
+  }
+
+  async commitMongoTransaction() {
+    await this.commitTransaction(this.session);
+  }
+
+  async abortMongoTransaction() {
+    await this.abortTransaction(this.session);
   }
 
   private createResponse<U>(status: boolean, data: U | null = null, message?: string, error?: any): ServiceResponse<U> {
@@ -420,7 +399,6 @@ export class MongoApiService<T extends Document> extends MongoService<T> {
 }
 
 export {
-  MongoDBClient,
   Connection,
   Model,
   Document,
@@ -437,5 +415,5 @@ export {
   Schema,
 };
 
-export const UserMongoService = new MongoApiService<UserDocument>('user', 'Users', UserSchema);
-export const OtpMongoService = new MongoApiService<OtpDocument>('otp', 'OTPs', OtpSchema);
+export const UserMongoService = new MongoApiService<UserDocument>(UserModel);
+export const OtpMongoService = new MongoApiService<OtpDocument>(OTPModel);

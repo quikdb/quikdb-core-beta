@@ -1,12 +1,9 @@
 import { createLogger, format, transports } from 'winston';
 import { LogOptionsType } from '../@types';
-import * as moment from 'moment';
 
 const { combine, timestamp, label, printf } = format;
 
-const myFormat = printf(
-  ({ level, message, label, timestamp }) => `${timestamp} || [${label}] || ${level}: ${message}`
-);
+const myFormat = printf(({ level, message, label, timestamp }) => `${timestamp} || [${label}] || ${level}: ${message}`);
 
 export const logger = async <T>({
   action,
@@ -16,8 +13,6 @@ export const logger = async <T>({
   options = {
     email: '',
     phone: '',
-    authId: '',
-    profileId: '',
     deviceIP: ' ',
     deviceID: ' ',
     deviceName: ' ',

@@ -92,6 +92,7 @@ export type LogOptionsType<T> = {
 
 export type LogType = {
   email?: string;
+  phone?: string;
   username?: string;
   deviceIP?: string;
   deviceID?: string;

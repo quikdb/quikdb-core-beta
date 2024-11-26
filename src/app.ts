@@ -9,8 +9,7 @@ import morgan from 'morgan';
 import { NODE_ENV, PORT, ORIGIN, CREDENTIALS } from '@/config';
 import { Routes } from '@/interfaces';
 import { Connection } from '@/services';
-import Services from '@/services/mongodb/setup';
-import { ClientNames } from '@types';
+import { MongoTools } from './utils';
 
 export class App {
   public app: express.Application;
@@ -28,13 +27,18 @@ export class App {
   }
 
   public async listen() {
-    await Services.setup(ClientNames.AUTH);
-    this.app.listen(this.port, () => {
-      console.log(`=================================`);
-      console.log(`======= ENV: ${this.env} =======`);
-      console.log(`🚀 App listening on the port ${this.port}`);
-      console.log(`=================================`);
-    });
+    try {
+      await MongoTools.InitMongo();
+      this.app.listen(this.port, () => {
+        console.log(`=================================`);
+        console.log(`======= ENV: ${this.env} =======`);
+        console.log(`🚀 App listening on the port ${this.port}`);
+        console.log(`=================================`);
+      });
+    } catch (err) {
+      console.error('Failed to initialize Redis client:', err);
+      process.exit(1);
+    }
   }
 
   public getServer() {
