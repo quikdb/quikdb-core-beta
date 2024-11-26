@@ -16,6 +16,7 @@ export const CREDENTIALS = process.env.CREDENTIALS === 'true';
 
 export const {
   NODE_ENV,
+  API_BASE_URL,
   BASE_URL,
   PORT,
   JWT_SECRET_KEY,

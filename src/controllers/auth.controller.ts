@@ -91,7 +91,7 @@ class AuthController extends BaseController {
       return Utils.apiResponse<UserDocument>(
         res,
         StatusCode.OK,
-        {},
+        { otp },
         {
           user: LogUsers.AUTH,
           action: LogAction.SEND,

@@ -1,9 +1,9 @@
 import { LogAction, LogStatus, StatusCode } from '@/@types';
-import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER } from '@/config';
+import { API_BASE_URL, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER } from '@/config';
 import { CryptoUtils } from '@/utils';
 import request from 'supertest';
 
-const BASE_URL = process.env.API_BASE_URL || 'http://localhost:4567';
+const BASE_URL = API_BASE_URL || 'http://localhost:4567';
 
 describe('Integration Test: Auth Module', () => {
   describe('[POST] /sendOtp', () => {
