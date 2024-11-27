@@ -5,7 +5,7 @@ import AuthController from '@/controllers/auth.controller';
 
 /** Import Middlewares */
 import {
-  SignInMiddleware,
+  SigninWithEPMiddleware,
   CheckTokenMiddleware,
   SendOtpMiddleware,
   VerifyOtpMiddleware,
@@ -24,10 +24,10 @@ export class AuthRoute implements Routes {
   }
 
   private initializeRoutes() {
-    this.router.post(`${this.path}/signin`, SignInMiddleware, AuthController.SigninWithEmailAndPassword);
     this.router.post(`${this.path}/sendOtp`, SendOtpMiddleware, AuthController.SendOtp);
     this.router.post(`${this.path}/verifyOtp`, VerifyOtpMiddleware, AuthController.VerifyOtp);
     this.router.post(`${this.path}/signupWithEP`, SignupWithEPMiddleware, AuthController.SignupWithEmailAndPassword);
+    this.router.post(`${this.path}/signinWithEP`, SigninWithEPMiddleware, AuthController.SigninWithEmailAndPassword);
     this.router.get(`${this.path}/signout`, CheckTokenMiddleware, AuthController.Signout);
   }
 }

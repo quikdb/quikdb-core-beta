@@ -63,43 +63,6 @@ export const AuthenticationMiddleware = async (req: Request, res: Response, next
   }
 };
 
-export const SignInMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
-    if (error) {
-      next(new ApiError(error, 'AuthMiddleware', 401));
-    }
-    res.locals.validatedSignInEPRequestBody = value;
-    next();
-  } catch (error) {
-    next(new ApiError(error.message || error, 'SignInMiddleware', 401));
-  }
-};
-
-export const SignupWithEPMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
-
-    if (error) {
-      next(new ApiError(error, 'SignupWithEPMiddleware', 401));
-    }
-
-    console.log({ value });
-
-    const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
-
-    console.log({ decryptedRequest });
-
-    const requestObject = JSON.parse(decryptedRequest);
-
-    res.locals.validatedSignupWithEPRequestBody = requestObject;
-
-    next();
-  } catch (error) {
-    next(new ApiError(error.message || error, 'SignupWithEPMiddleware', 401));
-  }
-};
-
 export const SendOtpMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
@@ -137,6 +100,50 @@ export const VerifyOtpMiddleware = async (req: Request, res: Response, next: Nex
     next();
   } catch (error) {
     next(new ApiError(error.message || error, 'VerifyOtpMiddleware', 401));
+  }
+};
+
+export const SignupWithEPMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
+
+    if (error) {
+      next(new ApiError(error, 'SignupWithEPMiddleware', 401));
+    }
+
+    const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+    const requestObject = JSON.parse(decryptedRequest);
+
+    res.locals.validatedSignupWithEPRequestBody = requestObject;
+
+    next();
+  } catch (error) {
+    next(new ApiError(error.message || error, 'SignupWithEPMiddleware', 401));
+  }
+};
+
+export const SigninWithEPMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
+
+    if (error) {
+      next(new ApiError(error, 'SigninWithEPMiddleware', 401));
+    }
+
+    console.log({ value });
+
+    const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+    console.log({ decryptedRequest });
+
+    const requestObject = JSON.parse(decryptedRequest);
+
+    res.locals.validatedSigninWithEPRequestBody = requestObject;
+
+    next();
+  } catch (error) {
+    next(new ApiError(error.message || error, 'SigninWithEPMiddleware', 401));
   }
 };
 

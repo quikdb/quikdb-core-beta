@@ -430,8 +430,8 @@ class AuthController extends BaseController {
     const session = null;
     try {
       /************ Extract validated sign-in data ************/
-      const validatedSignInEPRequestBody = res.locals.validatedSignInEPRequestBody;
-      const { password, email } = validatedSignInEPRequestBody;
+      const validatedSigninWithEPRequestBody = res.locals.validatedSigninWithEPRequestBody;
+      const { password, email } = validatedSigninWithEPRequestBody;
 
       /************ Find user by email or phone number ************/
       const auth = await AuthController.userService.findOneMongo(
@@ -443,7 +443,7 @@ class AuthController extends BaseController {
       );
 
       /************ Handle invalid credentials ************/
-      if (auth.status) {
+      if (!auth.status) {
         return AuthController.abortTransactionWithResponse(
           res,
           StatusCode.BAD_REQUEST,
@@ -459,7 +459,9 @@ class AuthController extends BaseController {
 
       /************ Validate password ************/
       const valid = Utils.comparePasswords(password, auth.data.password);
+
       console.log({ valid });
+
       if (!valid) {
         return AuthController.abortTransactionWithResponse(
           res,
@@ -478,6 +480,7 @@ class AuthController extends BaseController {
       const payload = {
         email,
       };
+
       const accessToken = Utils.createToken(payload);
 
       // send sign in notification.
@@ -491,6 +494,7 @@ class AuthController extends BaseController {
         StatusCode.OK,
         {
           accessToken,
+          user: auth.data,
         },
         {
           user: LogUsers.AUTH,
