@@ -76,32 +76,12 @@ export const SignInMiddleware = async (req: Request, res: Response, next: NextFu
   }
 };
 
-export const SendOtpMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+export const SignupWithEPMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
 
     if (error) {
-      next(new ApiError(error, 'AuthMiddleware', 401));
-    }
-
-    const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
-
-    const requestObject = JSON.parse(decryptedRequest);
-
-    res.locals.validatedSendOtpRequestBody = requestObject;
-
-    next();
-  } catch (error) {
-    next(new ApiError(error.message || error, 'SignInMiddleware', 401));
-  }
-};
-
-export const VerifyOtpMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
-
-    if (error) {
-      next(new ApiError(error, 'AuthMiddleware', 401));
+      next(new ApiError(error, 'SignupWithEPMiddleware', 401));
     }
 
     console.log({ value });
@@ -112,11 +92,51 @@ export const VerifyOtpMiddleware = async (req: Request, res: Response, next: Nex
 
     const requestObject = JSON.parse(decryptedRequest);
 
+    res.locals.validatedSignupWithEPRequestBody = requestObject;
+
+    next();
+  } catch (error) {
+    next(new ApiError(error.message || error, 'SignupWithEPMiddleware', 401));
+  }
+};
+
+export const SendOtpMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
+
+    if (error) {
+      next(new ApiError(error, 'SendOtpMiddleware', 401));
+    }
+
+    const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+    const requestObject = JSON.parse(decryptedRequest);
+
+    res.locals.validatedSendOtpRequestBody = requestObject;
+
+    next();
+  } catch (error) {
+    next(new ApiError(error.message || error, 'SendOtpMiddleware', 401));
+  }
+};
+
+export const VerifyOtpMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
+
+    if (error) {
+      next(new ApiError(error, 'VerifyOtpMiddleware', 401));
+    }
+
+    const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+    const requestObject = JSON.parse(decryptedRequest);
+
     res.locals.validatedVerifyOtpRequestBody = requestObject;
 
     next();
   } catch (error) {
-    next(new ApiError(error.message || error, 'SignInMiddleware', 401));
+    next(new ApiError(error.message || error, 'VerifyOtpMiddleware', 401));
   }
 };
 

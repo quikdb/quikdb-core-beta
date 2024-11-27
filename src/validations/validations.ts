@@ -22,3 +22,12 @@ export const ValidateOtpRequest = Joi.object({
     string: 'otp is of type string',
   }),
 });
+
+export const ValidateAuthRequest = Joi.object({
+  email: Joi.string().email().required().label('email').messages({
+    string: 'valid email is required',
+  }),
+  password: Joi.string().min(8).max(15).required().label('password').messages({
+    string: 'password of valid length is required',
+  }),
+});

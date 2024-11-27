@@ -14,11 +14,11 @@ const CanisterDetailsSchema = new mongoose.Schema({
 
 const UserSchema: mongoose.Schema = new mongoose.Schema(
   {
-    username: { type: String, required: true, unique: true },
+    username: { type: String, unique: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    principalId: { type: String, required: true },
-    canisterId: { type: String, required: true },
+    principalId: { type: String, unique: true },
+    canisterId: { type: String, unique: true },
     cyclesBalance: { type: Number, default: 0 },
     googleId: { type: String, unique: true, sparse: true },
     deleted: { type: Boolean, required: true, default: false },

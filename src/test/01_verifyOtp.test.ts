@@ -7,14 +7,14 @@ const BASE_URL = process.env.API_BASE_URL || 'http://localhost:4567';
 
 describe('Integration Test: Auth Module', () => {
   describe('[POST] /verifyOtp', () => {
-    it('should verify the otp', async () => {
-      const signInData = JSON.stringify({
+    it('should verify the one time password', async () => {
+      const data = JSON.stringify({
         email: 'samsonajulor@gmail.com',
         OTPType: 'signup',
         otp: '123456',
       });
 
-      const encryptedData = CryptoUtils.aesEncrypt(signInData, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+      const encryptedData = CryptoUtils.aesEncrypt(data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
 
       console.log({ encryptedData });
 

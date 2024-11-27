@@ -15,7 +15,7 @@ class AuthController extends BaseController {
   private static staticsInResponse: [LogUsers, LogAction, Model<UserDocument>] = [LogUsers.AUTH, LogAction.SIGNIN, UserModel];
 
   /**
-   * Handles the user signin process using email and pw.
+   * Handles the otp sending process during signup and password verification.
    * @param req - Express request object containing the user sign-up data.
    * @param res - Express response object to send the response.
    */
@@ -128,7 +128,7 @@ class AuthController extends BaseController {
   }
 
   /**
-   * Handles the user signin process using email and pw.
+   * Handles the otp verification process for password modification and signup.
    * @param req - Express request object containing the user sign-up data.
    * @param res - Express response object to send the response.
    */
@@ -255,6 +255,141 @@ class AuthController extends BaseController {
           user: LogUsers.AUTH,
           action: LogAction.VERIFY_OTP,
           message: 'email otp verified.',
+          status: LogStatus.SUCCESS,
+          serviceLog: UserModel,
+          options: {
+            email,
+          },
+        },
+      );
+    } catch (error) {
+      console.log(error);
+      !session.transaction.isActive && (await session.abortTransaction());
+      session?.endSession();
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.UNAUTHORIZED,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.SIGNUP,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: UserModel,
+          options: {},
+        },
+      );
+    } finally {
+      session?.endSession();
+    }
+  }
+
+  /**
+   * Handles the user signup process using email and pw.
+   * @param req - Express request object containing the user sign-up data.
+   * @param res - Express response object to send the response.
+   */
+  async SignupWithEmailAndPassword(req: Request, res: Response) {
+    const session = null;
+    try {
+      /************ Extract validated sign-in data ************/
+      const validatedSignupWithEPRequestBody = res.locals.validatedSignupWithEPRequestBody;
+      const { password, email } = validatedSignupWithEPRequestBody;
+
+      /************ Find user by email or phone number ************/
+      const auth = await AuthController.userService.findOneMongo(
+        {
+          email,
+          deleted: false,
+        },
+        { session, hiddenFields: ['password'] },
+      );
+
+      /************ Handle invalid credentials ************/
+      if (auth.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'already registered please login.',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      const otpData = await AuthController.otpService.findOneMongo(
+        {
+          email,
+          isValid: true,
+        },
+        { session },
+      );
+
+      if (!otpData.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.INTERNAL_SERVER_ERROR,
+          session,
+          'session validation failed please try again.',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ encrypt password ************/
+      const hashedPw = Utils.encryptPassword(password);
+
+      /************ Generate access token ************/
+      const payload = {
+        email,
+      };
+
+      const accessToken = Utils.createToken(payload);
+
+      const user = await AuthController.userService.createMongo(
+        {
+          email,
+          password: hashedPw,
+        },
+        { session },
+      );
+
+      if (!user.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.INTERNAL_SERVER_ERROR,
+          session,
+          'registration failed please try again.',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Commit the transaction and send a successful response ************/
+      await session?.commitTransaction();
+      session?.endSession();
+
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.OK,
+        {
+          accessToken,
+        },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.SIGNUP,
+          message: 'signup success.',
           status: LogStatus.SUCCESS,
           serviceLog: UserModel,
           options: {
