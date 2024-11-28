@@ -1,15 +1,17 @@
 import { LogAction, LogStatus, StatusCode } from '@/@types';
-import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER, NODE_ENV } from '@/config';
+import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER, NODE_ENV, API_BASE_URL } from '@/config';
 import { CryptoUtils } from '@/utils';
 import request from 'supertest';
 
-const BASE_URL = NODE_ENV === 'production' ? process.env.API_BASE_URL : 'http://localhost:4567';
+// const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';
+
+const BASE_URL = API_BASE_URL;
 
 describe('Integration Test: Auth Module', () => {
   describe('[POST] /signupWithEP', () => {
     it('should register the email and password of the user.', async () => {
       const data = JSON.stringify({
-        email: 'samsonajulor@gmail.com',
+        email: 'samson@gmail.com',
         password: 'password',
       });
 
@@ -29,6 +31,6 @@ describe('Integration Test: Auth Module', () => {
         action: LogAction.SIGNUP,
         message: 'signup success.',
       });
-    });
+    }, 20000);
   });
 });

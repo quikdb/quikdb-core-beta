@@ -68,7 +68,7 @@ class AuthController extends BaseController {
 
       const otp = NODE_ENV !== 'production' ? '123456' : Utils.generateOtp();
 
-      const createdOtp = await AuthController.otpService.createMongo({ otp: `${email}-${otp}`, email });
+      const createdOtp = await AuthController.otpService.updateOneMongo({ email }, { otp: `${email}-${otp}` }, { session });
 
       if (!createdOtp.status) {
         return AuthController.abortTransactionWithResponse(
