@@ -3,14 +3,14 @@ import { NODE_ENV, API_BASE_URL, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER } from '@
 import { CryptoUtils } from '@/utils';
 import request from 'supertest';
 
-const BASE_URL = API_BASE_URL;
-// const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';
+// const BASE_URL = API_BASE_URL;
+const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';
 
 describe('Integration Test: Auth Module', () => {
   describe('[POST] /sendOtp', () => {
     it('should send one time password', async () => {
       const data = JSON.stringify({
-        email: 'samson@gmail.com',
+        email: 'samsonajulor@gmail.com',
         OTPType: 'signup',
       });
 

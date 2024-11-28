@@ -3,15 +3,15 @@ import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER, NODE_ENV, API_BASE_URL } from '@
 import { CryptoUtils } from '@/utils';
 import request from 'supertest';
 
-// const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';
+const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';
 
-const BASE_URL = API_BASE_URL;
+// const BASE_URL = API_BASE_URL;
 
 describe('Integration Test: Auth Module', () => {
   describe('[POST] /signupWithEP', () => {
     it('should register the email and password of the user.', async () => {
       const data = JSON.stringify({
-        email: 'samson@gmail.com',
+        email: 'samsonajulor@gmail.com',
         password: 'password',
       });
 
