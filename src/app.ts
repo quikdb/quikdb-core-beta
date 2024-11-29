@@ -10,6 +10,7 @@ import { NODE_ENV, PORT, ORIGIN, CREDENTIALS } from '@/config';
 import { Routes } from '@/interfaces';
 import { Connection } from '@/services';
 import { MongoTools } from './utils';
+import { CheckTokenMiddleware } from './middlewares';
 
 export class App {
   public app: express.Application;
@@ -24,6 +25,20 @@ export class App {
 
     this.initializeMiddlewares();
     this.initializeRoutes(routes);
+  }
+
+  private listRoutes(express_app: express.Application) {
+    express_app._router.stack.forEach((middleware: any) => {
+      if (middleware.route) {
+        console.log(`Route: ${middleware.route.path}, Methods: ${Object.keys(middleware.route.methods).join(', ')}`);
+      } else if (middleware.name === 'router') {
+        middleware.handle.stack.forEach((handler: any) => {
+          if (handler.route) {
+            console.log(`Route: ${handler.route.path}, Methods: ${Object.keys(handler.route.methods).join(', ')}`);
+          }
+        });
+      }
+    });
   }
 
   public async listen() {
@@ -58,8 +73,10 @@ export class App {
 
   private initializeRoutes(routes: Routes[]) {
     routes.forEach((route, index) => {
-      if (index === 0) this.app.use('/', route.router); // this is the auth route
-      else this.app.use('/', route.router); // add an auth middleware here
+      if (index === 0) this.app.use('/', route.router);
+      else this.app.use('/v', CheckTokenMiddleware, route.router);
     });
+
+    this.listRoutes(this.app);
   }
 }

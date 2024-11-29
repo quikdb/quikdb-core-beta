@@ -68,7 +68,7 @@ export const SendOtpMiddleware = async (req: Request, res: Response, next: NextF
     const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
 
     if (error) {
-      next(new ApiError(error, 'SendOtpMiddleware', 401));
+      next(new ApiError(error, 'SendOtpMiddleware', StatusCode.UNAUTHORIZED));
     }
 
     const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
@@ -79,7 +79,7 @@ export const SendOtpMiddleware = async (req: Request, res: Response, next: NextF
 
     next();
   } catch (error) {
-    next(new ApiError(error.message || error, 'SendOtpMiddleware', 401));
+    next(new ApiError(error.message || error, 'SendOtpMiddleware', StatusCode.UNAUTHORIZED));
   }
 };
 
@@ -88,7 +88,7 @@ export const VerifyOtpMiddleware = async (req: Request, res: Response, next: Nex
     const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
 
     if (error) {
-      next(new ApiError(error, 'VerifyOtpMiddleware', 401));
+      next(new ApiError(error, 'VerifyOtpMiddleware', StatusCode.UNAUTHORIZED));
     }
 
     const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
@@ -99,7 +99,7 @@ export const VerifyOtpMiddleware = async (req: Request, res: Response, next: Nex
 
     next();
   } catch (error) {
-    next(new ApiError(error.message || error, 'VerifyOtpMiddleware', 401));
+    next(new ApiError(error.message || error, 'VerifyOtpMiddleware', StatusCode.UNAUTHORIZED));
   }
 };
 
@@ -108,7 +108,7 @@ export const SignupWithEPMiddleware = async (req: Request, res: Response, next: 
     const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
 
     if (error) {
-      next(new ApiError(error, 'SignupWithEPMiddleware', 401));
+      next(new ApiError(error, 'SignupWithEPMiddleware', StatusCode.UNAUTHORIZED));
     }
 
     const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
@@ -119,7 +119,7 @@ export const SignupWithEPMiddleware = async (req: Request, res: Response, next: 
 
     next();
   } catch (error) {
-    next(new ApiError(error.message || error, 'SignupWithEPMiddleware', 401));
+    next(new ApiError(error.message || error, 'SignupWithEPMiddleware', StatusCode.UNAUTHORIZED));
   }
 };
 
@@ -128,7 +128,7 @@ export const SigninWithEPMiddleware = async (req: Request, res: Response, next: 
     const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
 
     if (error) {
-      next(new ApiError(error, 'SigninWithEPMiddleware', 401));
+      next(new ApiError(error, 'SigninWithEPMiddleware', StatusCode.UNAUTHORIZED));
     }
 
     console.log({ value });
@@ -143,42 +143,46 @@ export const SigninWithEPMiddleware = async (req: Request, res: Response, next: 
 
     next();
   } catch (error) {
-    next(new ApiError(error.message || error, 'SigninWithEPMiddleware', 401));
+    next(new ApiError(error.message || error, 'SigninWithEPMiddleware', StatusCode.UNAUTHORIZED));
   }
 };
 
 export const CheckTokenMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authService = new MongoApiService<UserDocument>(UserModel);
-    const token = await Utils.checkToken(req);
+    const userService = new MongoApiService<UserDocument>(UserModel);
+    const token = Utils.checkToken(req);
 
-    console.log({ token, IsTokenBlacklisted: IsTokenBlacklisted(token) });
+    if (!token) {
+      return next(new ApiError('unauthorized', 'AuthMiddleware', StatusCode.UNAUTHORIZED));
+    }
 
-    if (!token || IsTokenBlacklisted(token)) {
-      return next(new ApiError('unauthorized', 'AuthMiddleware', 401));
+    if (token) {
+      console.log({ IsTokenBlacklisted: IsTokenBlacklisted(token) });
+      if (IsTokenBlacklisted(token)) {
+        return next(new ApiError('please sign in.', 'AuthMiddleware', StatusCode.UNAUTHORIZED));
+      }
     }
 
     const payload = (await Utils.verifyToken(token)) as any;
 
     console.log({ payload });
 
-    const auth = await authService.findOneMongo(
+    const user = await userService.findOneMongo(
       {
-        email: payload.username,
+        email: payload.email,
         deleted: false,
       },
-      { session: null, populate: 'profile' },
+      {},
+      { session: null },
     );
 
-    console.log({ auth });
-
-    if (!auth.status) {
-      return next(new ApiError('unauthorized', 'AuthMiddleware', 401));
+    if (!user.status) {
+      return next(new ApiError('user not found', 'AuthMiddleware', StatusCode.UNAUTHORIZED));
     }
 
-    res.locals.currentUser = auth;
+    res.locals.currentUser = user;
     return next();
   } catch (error) {
-    next(new ApiError(error.message || error, 'SignInMiddleware', 401));
+    next(new ApiError(error.message || error, 'SignInMiddleware', StatusCode.UNAUTHORIZED));
   }
 };

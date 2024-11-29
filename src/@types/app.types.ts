@@ -33,7 +33,7 @@ export enum StatusCode {
   BAD_GATEWAY = 502,
   BAD_REQUEST = 400,
   UNAUTHORIZED = 401,
-  ALREADY_EXISTS = 403,
+  ALREADY_EXISTS = 409,
   NOT_FOUND = 404,
   INTERNAL_SERVER_ERROR = 500,
 }
@@ -42,6 +42,7 @@ export enum LogUsers {
   USER = 'user.service',
   WEBHOOK = 'webhook.service',
   AUTH = 'auth.service',
+  PROJECT = 'project.service',
   TRANSACTION = 'transaction.service',
   PAYSTACK = 'paystack.service',
   STRIPE = 'stripe.service',
@@ -54,6 +55,9 @@ export enum LogUsers {
 
 export enum LogAction {
   CREATE = 'create',
+  CREATE_PROJECT = 'create_project',
+  FETCH_PROJECT = 'fetch_project',
+  FETCH_PROJECTS = 'fetch_projects',
   UPDATE = 'update',
   DELETE = 'delete',
   READ = 'read',

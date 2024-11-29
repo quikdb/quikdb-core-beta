@@ -1,13 +1,14 @@
 import { Response } from 'express';
 import { LogAction, LogStatus, LogUsers, StatusCode, LogType } from '@/@types';
 import { Utils } from '@/utils';
-import { ClientSession, Model, UserMongoService, GoogleAuthService, OtpMongoService } from '@/services';
+import { ClientSession, Model, UserMongoService, GoogleAuthService, OtpMongoService, ProjectMongoService } from '@/services';
 
 /**
  */
 export class BaseController {
   protected static userService = UserMongoService;
   protected static otpService = OtpMongoService;
+  protected static projectService = ProjectMongoService;
   protected static verifyGoogleToken = GoogleAuthService.verifyToken;
   /**
    * Aborts the current transaction and sends an error response.

@@ -3,7 +3,7 @@ import { UserDocument, UserModel } from '@/services/mongodb';
 import { LogAction, LogStatus, LogUsers, StatusCode, OtpRequestType } from '@/@types';
 import { Utils } from '@/utils';
 import { Model } from '@/services';
-import { BaseController } from './base.controller';
+import { BaseController } from './00_base.controller';
 import { AddToBlacklist } from '@/utils';
 import { NODE_ENV } from '@/config';
 
@@ -33,6 +33,7 @@ class AuthController extends BaseController {
           email,
           deleted: false,
         },
+        {},
         { session, hiddenFields: ['password'] },
       );
 
@@ -111,11 +112,11 @@ class AuthController extends BaseController {
       /************ Send an error response ************/
       return Utils.apiResponse<UserDocument>(
         res,
-        StatusCode.UNAUTHORIZED,
+        StatusCode.INTERNAL_SERVER_ERROR,
         { devError: error.message || 'Server error' },
         {
           user: LogUsers.AUTH,
-          action: LogAction.SIGNUP,
+          action: LogAction.SEND,
           message: JSON.stringify(error),
           status: LogStatus.FAIL,
           serviceLog: UserModel,
@@ -147,6 +148,7 @@ class AuthController extends BaseController {
           otp: `${email}-${otp}`,
           isValid: false,
         },
+        {},
         { session },
       );
 
@@ -190,6 +192,7 @@ class AuthController extends BaseController {
             email,
             deleted: false,
           },
+          {},
           { session, hiddenFields: ['password'] },
         );
 
@@ -216,7 +219,7 @@ class AuthController extends BaseController {
           },
           {
             user: LogUsers.AUTH,
-            action: LogAction.SIGNIN,
+            action: LogAction.VERIFY_OTP,
             message: 'password otp verified.',
             status: LogStatus.SUCCESS,
             serviceLog: UserModel,
@@ -270,11 +273,11 @@ class AuthController extends BaseController {
       /************ Send an error response ************/
       return Utils.apiResponse<UserDocument>(
         res,
-        StatusCode.UNAUTHORIZED,
+        StatusCode.INTERNAL_SERVER_ERROR,
         { devError: error.message || 'Server error' },
         {
           user: LogUsers.AUTH,
-          action: LogAction.SIGNUP,
+          action: LogAction.VERIFY_OTP,
           message: JSON.stringify(error),
           status: LogStatus.FAIL,
           serviceLog: UserModel,
@@ -304,6 +307,7 @@ class AuthController extends BaseController {
           email,
           deleted: false,
         },
+        {},
         { session, hiddenFields: ['password'] },
       );
 
@@ -327,6 +331,7 @@ class AuthController extends BaseController {
           email,
           isValid: true,
         },
+        {},
         { session },
       );
 
@@ -405,7 +410,7 @@ class AuthController extends BaseController {
       /************ Send an error response ************/
       return Utils.apiResponse<UserDocument>(
         res,
-        StatusCode.UNAUTHORIZED,
+        StatusCode.INTERNAL_SERVER_ERROR,
         { devError: error.message || 'Server error' },
         {
           user: LogUsers.AUTH,
@@ -439,6 +444,7 @@ class AuthController extends BaseController {
           email,
           deleted: false,
         },
+        {},
         { session, hiddenFields: ['password'] },
       );
 
@@ -568,6 +574,7 @@ class AuthController extends BaseController {
           email,
           deleted: false,
         },
+        {},
         { session },
       );
 
@@ -630,11 +637,11 @@ class AuthController extends BaseController {
       /************ Send an error response ************/
       return Utils.apiResponse<UserDocument>(
         res,
-        StatusCode.UNAUTHORIZED,
+        StatusCode.INTERNAL_SERVER_ERROR,
         { devError: error.message || 'Server error' },
         {
           user: LogUsers.AUTH,
-          action: LogAction.SIGNUP,
+          action: LogAction.SIGNIN,
           message: JSON.stringify(error),
           status: LogStatus.FAIL,
           serviceLog: UserModel,
@@ -663,6 +670,7 @@ class AuthController extends BaseController {
           email: tokenData.email,
           deleted: false,
         },
+        {},
         { session, hiddenFields: ['password'] },
       );
 
@@ -770,11 +778,11 @@ class AuthController extends BaseController {
       /************ Send an error response ************/
       return Utils.apiResponse<UserDocument>(
         res,
-        StatusCode.UNAUTHORIZED,
+        StatusCode.INTERNAL_SERVER_ERROR,
         { devError: error.message || 'Server error' },
         {
           user: LogUsers.AUTH,
-          action: LogAction.SIGNUP,
+          action: LogAction.SIGNIN,
           message: JSON.stringify(error),
           status: LogStatus.FAIL,
           serviceLog: UserModel,
@@ -805,7 +813,7 @@ class AuthController extends BaseController {
         {},
         {
           user: LogUsers.AUTH,
-          action: LogAction.READ,
+          action: LogAction.SIGNOUT,
           message: 'user signed out',
           status: LogStatus.SUCCESS,
           serviceLog: UserModel,
@@ -818,11 +826,11 @@ class AuthController extends BaseController {
       /************ Send an error response ************/
       return Utils.apiResponse<UserDocument>(
         res,
-        StatusCode.UNAUTHORIZED,
+        StatusCode.INTERNAL_SERVER_ERROR,
         { devError: error.message || 'Server error' },
         {
           user: LogUsers.AUTH,
-          action: LogAction.SIGNUP,
+          action: LogAction.SIGNOUT,
           message: JSON.stringify(error),
           status: LogStatus.FAIL,
           serviceLog: UserModel,

@@ -24,7 +24,7 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
     deleted: { type: Boolean, required: true, default: false },
     canisterDetails: { type: [CanisterDetailsSchema], default: [] },
   },
-  { timestamps: true },
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } },
 );
 
 const UserModel = mongoose.model<UserDocument>('User', UserSchema);

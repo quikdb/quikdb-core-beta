@@ -4,13 +4,7 @@ import { Router } from 'express';
 import AuthController from '@/controllers/auth.controller';
 
 /** Import Middlewares */
-import {
-  SigninWithEPMiddleware,
-  CheckTokenMiddleware,
-  SendOtpMiddleware,
-  VerifyOtpMiddleware,
-  SignupWithEPMiddleware,
-} from '@/middlewares/auth.middleware';
+import { SigninWithEPMiddleware, CheckTokenMiddleware, SendOtpMiddleware, VerifyOtpMiddleware, SignupWithEPMiddleware } from '@/middlewares';
 
 /** Import interfaces */
 import { Routes } from '@/interfaces';

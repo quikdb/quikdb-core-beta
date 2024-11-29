@@ -118,12 +118,12 @@ export class Utils {
     return sign(payload, JWT_SECRET_KEY as string, { expiresIn });
   }
 
-  static async checkToken(req: Request): Promise<string | null> {
+  static checkToken(req: Request): string | null {
     const {
       headers: { authorization },
       cookies: { token: cookieToken },
     } = req;
-    const token = authorization || cookieToken || req.headers['x-access-token'] || req.headers.token || req.body.token;
+    const token = authorization || cookieToken || req.headers['x-access-token'] || req.headers?.token || req.body?.token;
 
     return token || null;
   }
