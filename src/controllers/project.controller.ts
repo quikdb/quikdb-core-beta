@@ -23,7 +23,7 @@ class ProjectController extends BaseController {
     try {
       /************ Extract validated create project data ************/
       const validatedCreateProjectRequestBody = res.locals.validatedCreateProjectRequestBody;
-      const { id, type } = validatedCreateProjectRequestBody;
+      const { id } = validatedCreateProjectRequestBody;
 
       console.log({ validatedCreateProjectRequestBody });
 
@@ -54,7 +54,7 @@ class ProjectController extends BaseController {
       const projectData = await ProjectController.projectService.createMongo(
         {
           name: id, // id is the name in this case,
-          type,
+          owner: res.locals.currentUser._id,
         },
         { session },
       );
@@ -79,7 +79,7 @@ class ProjectController extends BaseController {
 
       return Utils.apiResponse<ProjectDocument>(
         res,
-        StatusCode.OK,
+        StatusCode.CREATED,
         {
           projectData,
         },
@@ -125,6 +125,7 @@ class ProjectController extends BaseController {
    */
   async FetchProjects(req: Request, res: Response) {
     const session = null;
+    console.log({ currentUser: res.locals.currentUser });
     try {
       /************ Find Project by email or phone number ************/
       const projects = await ProjectController.projectService.findMongo({}, { session });
@@ -143,7 +144,9 @@ class ProjectController extends BaseController {
         );
       }
 
-      return !projects.data || projects.data.length === 0
+      const { status, ...rest } = projects;
+
+      return !status || rest.data.length === 0
         ? Utils.apiResponse<ProjectDocument>(
             res,
             StatusCode.OK,
@@ -165,7 +168,7 @@ class ProjectController extends BaseController {
             res,
             StatusCode.OK,
             {
-              projects,
+              projects: rest,
             },
             {
               user: LogUsers.PROJECT,

@@ -1,15 +1,15 @@
 import * as mongoose from 'mongoose';
-import { ProjectType, ProjectVersion } from '@/@types';
+import { ProjectType } from '@/@types';
 
 type ProjectDocument = ProjectType & mongoose.Document;
 
 const ProjectSchema: mongoose.Schema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    type: {
+    owner: {
       type: String,
-      enum: Object.values(ProjectVersion),
       required: true,
+      ref: 'User',
     },
     code: { type: String },
     isActive: { type: Boolean, required: true, default: false },

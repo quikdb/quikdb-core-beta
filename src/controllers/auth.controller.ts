@@ -387,7 +387,7 @@ class AuthController extends BaseController {
 
       return Utils.apiResponse<UserDocument>(
         res,
-        StatusCode.OK,
+        StatusCode.CREATED,
         {
           accessToken,
         },

@@ -1,4 +1,4 @@
-import { OtpRequestType, ProjectVersion } from '@/@types';
+import { OtpRequestType } from '@/@types';
 import Joi from 'joi';
 
 export const ValidateRequests = Joi.object({
@@ -36,11 +36,4 @@ export const ValidateProjectRequest = Joi.object({
   id: Joi.string().required().label('id').messages({
     string: 'project name or id is required',
   }),
-  type: Joi.string()
-    .optional()
-    .valid(...Object.values(ProjectVersion))
-    .label('project type')
-    .messages({
-      string: 'project type of "free", "premium", or "professional" is required',
-    }),
 });

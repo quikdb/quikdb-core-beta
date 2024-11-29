@@ -173,14 +173,14 @@ export const CheckTokenMiddleware = async (req: Request, res: Response, next: Ne
         deleted: false,
       },
       {},
-      { session: null },
+      { session: null, hiddenFields: ['password'] },
     );
 
     if (!user.status) {
       return next(new ApiError('user not found', 'AuthMiddleware', StatusCode.UNAUTHORIZED));
     }
 
-    res.locals.currentUser = user;
+    res.locals.currentUser = user.data;
     return next();
   } catch (error) {
     next(new ApiError(error.message || error, 'SignInMiddleware', StatusCode.UNAUTHORIZED));

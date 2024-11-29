@@ -27,7 +27,7 @@ describe('Integration Test: Auth Module', () => {
 
       expect(response.body).toMatchObject({
         status: LogStatus.SUCCESS,
-        code: StatusCode.OK,
+        code: StatusCode.CREATED,
         action: LogAction.SIGNUP,
         message: 'signup success.',
       });

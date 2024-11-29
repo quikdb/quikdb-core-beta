@@ -19,5 +19,6 @@ export class ProjectRoute implements Routes {
 
   private initializeRoutes() {
     this.router.post(`${this.path}`, CreateProjectMiddleware, ProjectController.CreateProject);
+    this.router.get(`${this.path}`, ProjectController.FetchProjects);
   }
 }
