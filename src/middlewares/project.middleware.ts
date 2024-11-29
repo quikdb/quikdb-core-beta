@@ -34,7 +34,7 @@ export const FetchProjectMiddleware = async (req: Request, res: Response, next: 
     const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.params);
 
     if (error) {
-      next(new ApiError(error, 'CreateProjectMiddleware', 401));
+      next(new ApiError(error, 'FetchProjectMiddleware', 401));
     }
 
     const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
@@ -45,6 +45,6 @@ export const FetchProjectMiddleware = async (req: Request, res: Response, next: 
 
     next();
   } catch (error) {
-    next(new ApiError(error.message || error, 'CreateProjectMiddleware', 401));
+    next(new ApiError(error.message || error, 'FetchProjectMiddleware', 401));
   }
 };

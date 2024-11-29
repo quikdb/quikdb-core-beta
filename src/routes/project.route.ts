@@ -4,7 +4,7 @@ import { Router } from 'express';
 import ProjectController from '@/controllers/project.controller';
 
 /** Import Middlewares */
-import { CreateProjectMiddleware } from '@/middlewares';
+import { CreateProjectMiddleware, FetchProjectMiddleware } from '@/middlewares';
 
 /** Import interfaces */
 import { Routes } from '@/interfaces';
@@ -20,5 +20,6 @@ export class ProjectRoute implements Routes {
   private initializeRoutes() {
     this.router.post(`${this.path}`, CreateProjectMiddleware, ProjectController.CreateProject);
     this.router.get(`${this.path}`, ProjectController.FetchProjects);
+    this.router.get(`${this.path}/:data`, FetchProjectMiddleware, ProjectController.FetchProject);
   }
 }

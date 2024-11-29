@@ -9,26 +9,24 @@ const token =
 
 describe('Integration Test: Auth Module', () => {
   describe('[POST] /v/p', () => {
-    it('should create a project.', async () => {
+    it('should fetch all projects for the logged in user.', async () => {
       const data = JSON.stringify({
-        id: 'quikdb',
+        id: '67496c990b1ea3c0b952df18',
       });
 
       const encryptedData = CryptoUtils.aesEncrypt(data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
 
       console.log({ encryptedData });
 
-      const response = await request(BASE_URL).post('/v/p').set('Authorization', token).send({
-        data: encryptedData,
-      });
+      const response = await request(BASE_URL).get(`/v/p/${encryptedData}`).set('Authorization', token);
 
       console.log('Test Response:', response.body);
 
       expect(response.body).toMatchObject({
         status: LogStatus.SUCCESS,
-        code: StatusCode.CREATED,
-        action: LogAction.CREATE_PROJECT,
-        message: 'Project created.',
+        code: StatusCode.OK,
+        action: LogAction.FETCH_PROJECT,
+        message: 'project found.',
       });
     });
   });

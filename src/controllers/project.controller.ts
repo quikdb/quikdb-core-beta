@@ -128,7 +128,7 @@ class ProjectController extends BaseController {
     console.log({ currentUser: res.locals.currentUser });
     try {
       /************ Find Project by email or phone number ************/
-      const projects = await ProjectController.projectService.findMongo({}, { session });
+      const projects = await ProjectController.projectService.findMongo({ owner: res.locals.currentUser._id }, { session });
 
       if (!projects.status) {
         return ProjectController.abortTransactionWithResponse(
@@ -144,9 +144,9 @@ class ProjectController extends BaseController {
         );
       }
 
-      const { status, ...rest } = projects;
+      const { status, data, ...rest } = projects;
 
-      return !status || rest.data.length === 0
+      return !status || data.length === 0
         ? Utils.apiResponse<ProjectDocument>(
             res,
             StatusCode.OK,
@@ -168,7 +168,8 @@ class ProjectController extends BaseController {
             res,
             StatusCode.OK,
             {
-              projects: rest,
+              projects: data,
+              ...rest,
             },
             {
               user: LogUsers.PROJECT,
@@ -240,8 +241,10 @@ class ProjectController extends BaseController {
         { session },
       );
 
+      const { status, data, ...rest } = project;
+
       /************ Handle invalid credentials ************/
-      if (!project.status) {
+      if (!status) {
         return ProjectController.abortTransactionWithResponse(
           res,
           StatusCode.BAD_REQUEST,
@@ -263,7 +266,8 @@ class ProjectController extends BaseController {
         res,
         StatusCode.OK,
         {
-          project,
+          project: data,
+          ...rest,
         },
         {
           user: LogUsers.PROJECT,
