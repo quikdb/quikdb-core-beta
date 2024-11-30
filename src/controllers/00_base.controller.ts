@@ -9,7 +9,7 @@ export class BaseController {
   protected static userService = UserMongoService;
   protected static otpService = OtpMongoService;
   protected static projectService = ProjectMongoService;
-  protected static verifyGoogleToken = GoogleAuthService.verifyToken;
+  protected static googleService = GoogleAuthService;
   /**
    * Aborts the current transaction and sends an error response.
    * @param res - Express response object.

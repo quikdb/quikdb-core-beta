@@ -32,6 +32,21 @@ export const ValidateAuthRequest = Joi.object({
   }),
 });
 
+export const ValidateGoogleAuthRequest = Joi.object({
+  code: Joi.string().required().label('code').messages({
+    string: 'valid code is required',
+  }),
+  authuser: Joi.string().required().label('authUser').messages({
+    string: 'valid authUser is required',
+  }),
+  scope: Joi.string().required().label('scopt').messages({
+    string: 'valid scopt is required',
+  }),
+  prompt: Joi.string().required().label('prompt').messages({
+    string: 'valid prompt is required',
+  }),
+});
+
 export const ValidateProjectRequest = Joi.object({
   id: Joi.string().required().label('id').messages({
     string: 'project name or id is required',

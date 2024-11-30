@@ -546,18 +546,22 @@ class AuthController extends BaseController {
     const session = null;
     try {
       /************ Extract validated sign-in data ************/
-      const validatedSignInWGoogleRequestBody = res.locals.validatedSignInWGoogleRequestBody;
+      const validatedSignInWGoogleRequest = res.locals.validatedSignInWGoogleRequest;
 
-      const { googleToken } = validatedSignInWGoogleRequestBody;
+      const { code } = validatedSignInWGoogleRequest;
 
-      const payload = await AuthController.verifyGoogleToken(googleToken);
+      const client = AuthController.googleService.client;
 
-      if (!payload) {
+      const tokens = await AuthController.googleService.getTokens(client, code);
+
+      console.log({ tokens });
+
+      if (!tokens.status) {
         return AuthController.abortTransactionWithResponse(
           res,
           StatusCode.BAD_REQUEST,
           session,
-          'invalid credentials',
+          tokens.message,
           LogStatus.FAIL,
           ...AuthController.staticsInResponse,
           {
@@ -566,7 +570,25 @@ class AuthController extends BaseController {
         );
       }
 
-      const { email, sub: googleId } = payload;
+      const payload = await AuthController.googleService.verifyToken(client, tokens.data.id_token);
+
+      console.log({ payload });
+
+      if (!payload.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          payload.message,
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      const { email, sub: googleId } = payload.data;
 
       /************ Find user by email or phone number ************/
       const auth = await AuthController.userService.findOneMongo(
@@ -791,6 +813,52 @@ class AuthController extends BaseController {
       );
     } finally {
       session?.endSession();
+    }
+  }
+
+  /**
+   * Signs out a user.
+   * @param req - Express request object containing the user sign-up data.
+   * @param res - Express response object to send the response.
+   */
+  async GetAuthUrl(req: Request, res: Response) {
+    try {
+      const client = AuthController.googleService.client;
+      const auth = AuthController.googleService.generateAuthUrl(client);
+
+      console.log({ auth });
+
+      if (!auth.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          null,
+          auth.message,
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+      res.redirect(auth.data);
+    } catch (error) {
+      console.log(error);
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.INTERNAL_SERVER_ERROR,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.GET_AUTH_URL,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: UserModel,
+          options: {},
+        },
+      );
     }
   }
 

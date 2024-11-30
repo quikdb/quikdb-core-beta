@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { ValidateRequests } from '@/validations/validations';
+import { ValidateRequests, ValidateGoogleAuthRequest } from '@/validations/validations';
 import { Utils, ApiError, CryptoUtils } from '@/utils';
 import { UserDocument, UserModel } from '@/services/mongodb';
 import { MongoApiService } from '@/services';
@@ -140,6 +140,24 @@ export const SigninWithEPMiddleware = async (req: Request, res: Response, next: 
     const requestObject = JSON.parse(decryptedRequest);
 
     res.locals.validatedSigninWithEPRequestBody = requestObject;
+
+    next();
+  } catch (error) {
+    next(new ApiError(error.message || error, 'SigninWithEPMiddleware', StatusCode.UNAUTHORIZED));
+  }
+};
+
+export const SigninWithGoogleMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { value, error } = Utils.validateJoiSchema(ValidateGoogleAuthRequest, req.query);
+
+    if (error) {
+      next(new ApiError(error, 'SigninWithEPMiddleware', StatusCode.UNAUTHORIZED));
+    }
+
+    console.log({ value });
+
+    res.locals.validatedSignInWGoogleRequest = value;
 
     next();
   } catch (error) {

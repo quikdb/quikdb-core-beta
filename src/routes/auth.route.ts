@@ -4,7 +4,14 @@ import { Router } from 'express';
 import AuthController from '@/controllers/auth.controller';
 
 /** Import Middlewares */
-import { SigninWithEPMiddleware, CheckTokenMiddleware, SendOtpMiddleware, VerifyOtpMiddleware, SignupWithEPMiddleware } from '@/middlewares';
+import {
+  SigninWithEPMiddleware,
+  CheckTokenMiddleware,
+  SendOtpMiddleware,
+  VerifyOtpMiddleware,
+  SignupWithEPMiddleware,
+  SigninWithGoogleMiddleware,
+} from '@/middlewares';
 
 /** Import interfaces */
 import { Routes } from '@/interfaces';
@@ -18,6 +25,9 @@ export class AuthRoute implements Routes {
   }
 
   private initializeRoutes() {
+    this.router.get(`${this.path}/get-oauth-url`, AuthController.GetAuthUrl);
+    this.router.get(`${this.path}/google-oauth-callback`, SigninWithGoogleMiddleware, AuthController.SigninWithGoogleOAuth);
+    this.router.get(`${this.path}/callback`, SigninWithGoogleMiddleware, AuthController.SigninWithGoogleOAuth);
     this.router.post(`${this.path}/sendOtp`, SendOtpMiddleware, AuthController.SendOtp);
     this.router.post(`${this.path}/verifyOtp`, VerifyOtpMiddleware, AuthController.VerifyOtp);
     this.router.post(`${this.path}/signupWithEP`, SignupWithEPMiddleware, AuthController.SignupWithEmailAndPassword);

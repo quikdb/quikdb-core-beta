@@ -1,37 +1,78 @@
-import { OAuth2Client, TokenPayload } from 'google-auth-library';
-import { GOOGLE_CLIENT_ID } from '@/config';
+import { ServiceResponse } from '@/@types';
+import { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } from '@/config';
+import { Credentials, OAuth2Client } from 'google-auth-library';
 
-class googleAuthService {
-  private client: OAuth2Client;
+export class GoogleAuthService {
+  public static client: OAuth2Client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI);
 
-  constructor() {
-    if (!GOOGLE_CLIENT_ID) {
-      throw new Error('Missing GOOGLE_CLIENT_ID environment variable');
+  /**
+   * Generate the URL for OAuth 2.0 authorization.
+   * This should be used to redirect the user to Google's authorization page.
+   */
+  static generateAuthUrl(client: OAuth2Client): ServiceResponse<string> {
+    try {
+      const authUrl = client.generateAuthUrl({
+        access_type: 'offline',
+        scope: ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email'],
+      });
+      return {
+        status: true,
+        message: 'Successfully generated auth URL.',
+        data: authUrl,
+      };
+    } catch (error) {
+      return {
+        status: false,
+        message: 'Error generating auth URL.',
+        data: undefined,
+      };
     }
-
-    // Initialize the OAuth2Client with the Google Client ID from environment variables
-    this.client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
   }
 
   /**
-   * Verifies the Google ID token and returns the payload if valid.
-   * @param token - The Google ID token to verify.
-   * @returns A Promise that resolves to the payload of the verified token.
-   * @throws An error if the token is invalid or verification fails.
+   * Exchange the authorization code for an access token and refresh token.
+   * @param code - The authorization code returned from the Google OAuth server.
+   * @returns A Promise that resolves to the tokens.
    */
-  async verifyToken(token: string): Promise<TokenPayload | null> {
+  static async getTokens(client: OAuth2Client, code: string): Promise<ServiceResponse<Credentials>> {
     try {
-      const ticket = await this.client.verifyIdToken({
-        idToken: token,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-
-      return ticket.getPayload();
+      const { tokens } = await client.getToken(code);
+      return {
+        status: true,
+        message: 'Successfully retrieved tokens.',
+        data: tokens,
+      };
     } catch (error) {
-      console.error('Error verifying Google token:', error);
-      throw new Error('Invalid Google token');
+      return {
+        status: false,
+        message: 'Error retrieving tokens: ' + error.message,
+        data: undefined,
+      };
+    }
+  }
+
+  /**
+   * Verify the Google ID token and return the payload.
+   * @param token - The ID token to verify.
+   * @returns A Promise that resolves to the payload of the verified token.
+   */
+  static async verifyToken(client: OAuth2Client, token: string): Promise<ServiceResponse<any>> {
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken: token,
+        audience: GOOGLE_CLIENT_ID,
+      });
+      return {
+        status: true,
+        message: 'Token verified successfully.',
+        data: ticket.getPayload(),
+      };
+    } catch (error) {
+      return {
+        status: false,
+        message: 'Error verifying token: ' + error.message,
+        data: undefined,
+      };
     }
   }
 }
-
-export const GoogleAuthService = new googleAuthService();
