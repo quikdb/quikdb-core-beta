@@ -131,11 +131,7 @@ export const SigninWithEPMiddleware = async (req: Request, res: Response, next: 
       next(new ApiError(error, 'SigninWithEPMiddleware', StatusCode.UNAUTHORIZED));
     }
 
-    console.log({ value });
-
     const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
-
-    console.log({ decryptedRequest });
 
     const requestObject = JSON.parse(decryptedRequest);
 
@@ -155,8 +151,6 @@ export const SigninWithGoogleMiddleware = async (req: Request, res: Response, ne
       next(new ApiError(error, 'SigninWithEPMiddleware', StatusCode.UNAUTHORIZED));
     }
 
-    console.log({ value });
-
     res.locals.validatedSignInWGoogleRequest = value;
 
     next();
@@ -175,15 +169,12 @@ export const CheckTokenMiddleware = async (req: Request, res: Response, next: Ne
     }
 
     if (token) {
-      console.log({ IsTokenBlacklisted: IsTokenBlacklisted(token) });
       if (IsTokenBlacklisted(token)) {
         return next(new ApiError('please sign in.', 'AuthMiddleware', StatusCode.UNAUTHORIZED));
       }
     }
 
     const payload = (await Utils.verifyToken(token)) as any;
-
-    console.log({ payload });
 
     const user = await userService.findOneMongo(
       {

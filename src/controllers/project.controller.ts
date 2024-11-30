@@ -25,8 +25,6 @@ class ProjectController extends BaseController {
       const validatedCreateProjectRequestBody = res.locals.validatedCreateProjectRequestBody;
       const { id } = validatedCreateProjectRequestBody;
 
-      console.log({ validatedCreateProjectRequestBody });
-
       /************ Find Project by email or phone number ************/
       const project = await ProjectController.projectService.findOneMongo(
         {
@@ -125,7 +123,6 @@ class ProjectController extends BaseController {
    */
   async FetchProjects(req: Request, res: Response) {
     const session = null;
-    console.log({ currentUser: res.locals.currentUser });
     try {
       /************ Find Project by email or phone number ************/
       const projects = await ProjectController.projectService.findMongo({ owner: res.locals.currentUser._id }, { session });

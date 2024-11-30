@@ -466,8 +466,6 @@ class AuthController extends BaseController {
       /************ Validate password ************/
       const valid = Utils.comparePasswords(password, auth.data.password);
 
-      console.log({ valid });
-
       if (!valid) {
         return AuthController.abortTransactionWithResponse(
           res,
@@ -554,8 +552,6 @@ class AuthController extends BaseController {
 
       const tokens = await AuthController.googleService.getTokens(client, code);
 
-      console.log({ tokens });
-
       if (!tokens.status) {
         return AuthController.abortTransactionWithResponse(
           res,
@@ -571,8 +567,6 @@ class AuthController extends BaseController {
       }
 
       const payload = await AuthController.googleService.verifyToken(client, tokens.data.id_token);
-
-      console.log({ payload });
 
       if (!payload.status) {
         return AuthController.abortTransactionWithResponse(
@@ -825,8 +819,6 @@ class AuthController extends BaseController {
     try {
       const client = AuthController.googleService.client;
       const auth = AuthController.googleService.generateAuthUrl(client);
-
-      console.log({ auth });
 
       if (!auth.status) {
         return AuthController.abortTransactionWithResponse(

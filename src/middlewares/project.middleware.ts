@@ -11,15 +11,9 @@ export const CreateProjectMiddleware = async (req: Request, res: Response, next:
       next(new ApiError(error, 'CreateProjectMiddleware', 401));
     }
 
-    console.log({ value });
-
     const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
 
-    console.log({ decryptedRequest });
-
     const requestObject = JSON.parse(decryptedRequest);
-
-    console.log({ requestObject });
 
     res.locals.validatedCreateProjectRequestBody = requestObject;
 
