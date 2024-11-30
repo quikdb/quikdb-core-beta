@@ -536,6 +536,51 @@ class AuthController extends BaseController {
   }
 
   /**
+   * Signs out a user.
+   * @param req - Express request object containing the user sign-up data.
+   * @param res - Express response object to send the response.
+   */
+  async GetAuthUrl(req: Request, res: Response) {
+    try {
+      const client = AuthController.googleService.client;
+      const auth = AuthController.googleService.generateAuthUrl(client);
+
+      if (!auth.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          null,
+          auth.message,
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+      console.log({ redirect_url: auth.data });
+      res.redirect(auth.data);
+    } catch (error) {
+      console.log(error);
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.INTERNAL_SERVER_ERROR,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.GET_AUTH_URL,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: UserModel,
+          options: {},
+        },
+      );
+    }
+  }
+
+  /**
    * Handles the user signin process using email and pw.
    * @param req - Express request object containing the user sign-up data.
    * @param res - Express response object to send the response.
@@ -584,39 +629,26 @@ class AuthController extends BaseController {
 
       const { email, sub: googleId } = payload.data;
 
-      /************ Find user by email or phone number ************/
-      const auth = await AuthController.userService.findOneMongo(
+      const user = await AuthController.userService.updateOneMongo(
         {
           email,
-          deleted: false,
         },
-        {},
+        { googleId },
         { session },
       );
 
-      /************ Handle invalid credentials ************/
-      if (!auth.status) {
-        const user = await AuthController.userService.createMongo(
+      if (!user.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'invalid credentials',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
           {
-            email,
-            googleId,
+            email: '',
           },
-          { session },
         );
-
-        if (!user.status) {
-          return AuthController.abortTransactionWithResponse(
-            res,
-            StatusCode.BAD_REQUEST,
-            session,
-            'invalid credentials',
-            LogStatus.FAIL,
-            ...AuthController.staticsInResponse,
-            {
-              email: '',
-            },
-          );
-        }
       }
 
       /************ Generate access token ************/
@@ -807,50 +839,6 @@ class AuthController extends BaseController {
       );
     } finally {
       session?.endSession();
-    }
-  }
-
-  /**
-   * Signs out a user.
-   * @param req - Express request object containing the user sign-up data.
-   * @param res - Express response object to send the response.
-   */
-  async GetAuthUrl(req: Request, res: Response) {
-    try {
-      const client = AuthController.googleService.client;
-      const auth = AuthController.googleService.generateAuthUrl(client);
-
-      if (!auth.status) {
-        return AuthController.abortTransactionWithResponse(
-          res,
-          StatusCode.BAD_REQUEST,
-          null,
-          auth.message,
-          LogStatus.FAIL,
-          ...AuthController.staticsInResponse,
-          {
-            email: '',
-          },
-        );
-      }
-      res.redirect(auth.data);
-    } catch (error) {
-      console.log(error);
-
-      /************ Send an error response ************/
-      return Utils.apiResponse<UserDocument>(
-        res,
-        StatusCode.INTERNAL_SERVER_ERROR,
-        { devError: error.message || 'Server error' },
-        {
-          user: LogUsers.AUTH,
-          action: LogAction.GET_AUTH_URL,
-          message: JSON.stringify(error),
-          status: LogStatus.FAIL,
-          serviceLog: UserModel,
-          options: {},
-        },
-      );
     }
   }
 
