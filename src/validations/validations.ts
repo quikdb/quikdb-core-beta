@@ -36,14 +36,14 @@ export const ValidateGoogleAuthRequest = Joi.object({
   code: Joi.string().required().label('code').messages({
     string: 'valid code is required',
   }),
-  authuser: Joi.string().required().label('authUser').messages({
-    string: 'valid authUser is required',
+  authuser: Joi.string().label('auth-user').messages({
+    string: 'auth-user is required.',
   }),
-  scope: Joi.string().required().label('scopt').messages({
-    string: 'valid scopt is required',
+  scope: Joi.string().label('scope').messages({
+    string: 'scope is not valid',
   }),
-  prompt: Joi.string().required().label('prompt').messages({
-    string: 'valid prompt is required',
+  prompt: Joi.string().label('prompt').messages({
+    string: 'prompt is not valid.',
   }),
 });
 
