@@ -1,4 +1,4 @@
-import { OtpRequestType } from '@/@types';
+import { DatabaseVersion, OtpRequestType } from '@/@types';
 import Joi from 'joi';
 
 export const ValidateRequests = Joi.object({
@@ -50,5 +50,21 @@ export const ValidateGoogleAuthRequest = Joi.object({
 export const ValidateProjectRequest = Joi.object({
   id: Joi.string().required().label('id').messages({
     string: 'project name or id is required',
+  }),
+});
+
+export const ValidateCreateProjectRequest = Joi.object({
+  email: Joi.string().email().required().label('email').messages({
+    string: 'valid email is required',
+  }),
+  databaseVersion: Joi.string()
+    .required()
+    .valid(...Object.values(DatabaseVersion))
+    .label('database version')
+    .messages({
+      string: `Database version of either ${Object.values(DatabaseVersion).join(', ')} is required`,
+    }),
+  duration: Joi.number().required().min(1).label('token-duration').messages({
+    string: 'duration is required in days',
   }),
 });

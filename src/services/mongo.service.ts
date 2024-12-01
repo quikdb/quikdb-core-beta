@@ -16,10 +16,9 @@ import mongoose, {
 import { DbOptions, GenericAnyType, PaginatedResult, ServiceResponse, StatusCode } from '../@types';
 import { ApiError } from '../utils';
 import { ObjectId } from 'bson';
-import { OtpDocument, OTPModel, UserDocument, UserModel, ProjectDocument, ProjectModel } from '@/services/mongodb';
+import { OtpDocument, OTPModel, UserDocument, UserModel, ProjectDocument, ProjectModel, TokenDocument, TokenModel } from '@/services/mongodb';
 import { AUTH_MONGO_URI, MongoDBClient } from '@/config';
 
-// Define MongoDB URIs based on client names
 export const MONGO_URIS: { [clientName: string]: string } = {
   auth: AUTH_MONGO_URI || '',
   // Add more clients and their URIs as needed
@@ -418,3 +417,4 @@ export {
 export const UserMongoService = new MongoApiService<UserDocument>(UserModel);
 export const OtpMongoService = new MongoApiService<OtpDocument>(OTPModel);
 export const ProjectMongoService = new MongoApiService<ProjectDocument>(ProjectModel);
+export const TokenMongoService = new MongoApiService<TokenDocument>(TokenModel);

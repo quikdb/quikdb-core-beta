@@ -8,8 +8,8 @@ const token =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNhbXNvbmFqdWxvckBnbWFpbC5jb20iLCJpYXQiOjE3MzI4NjA1NjgsImV4cCI6MTc0MTUwMDU2OH0.T2UaDAJ3h4JlCmzP-Zsa8KUVmfUYs510HO8wVOgQ06Q';
 
 describe('Integration Test: Auth Module', () => {
-  describe('[POST] /v/p', () => {
-    it('should fetch all projects for the logged in user.', async () => {
+  describe('[POST] /v/p/:data', () => {
+    it('should fetch a project for the logged in user.', async () => {
       const data = JSON.stringify({
         id: '67496c990b1ea3c0b952df18',
       });

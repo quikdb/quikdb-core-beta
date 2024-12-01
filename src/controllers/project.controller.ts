@@ -1,17 +1,158 @@
 import { Request, Response } from 'express';
 import { ProjectDocument, ProjectModel } from '@/services/mongodb';
-import { LogAction, LogStatus, LogUsers, StatusCode } from '@/@types';
-import { Utils } from '@/utils';
+import { LogAction, LogStatus, LogUsers, StatusCode, Token } from '@/@types';
+import { CryptoUtils, Utils } from '@/utils';
 import { Model } from '@/services';
 import { BaseController } from './00_base.controller';
-import mongoose from 'mongoose';
+import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER } from '@/config';
 
 /**
  * ProjectControllers handles the sign-in process for Projects.
  * It includes multi-factor authentication (MFA) handling and Project session management.
  */
 class ProjectController extends BaseController {
-  private static staticsInResponse: [LogUsers, LogAction, Model<ProjectDocument>] = [LogUsers.AUTH, LogAction.SIGNIN, ProjectModel];
+  private static staticsInResponse: [LogUsers, LogAction, Model<ProjectDocument>] = [LogUsers.AUTH, LogAction.ERROR, ProjectModel];
+
+  /**
+   * Handles the Project creation process.
+   * @param req - Express request object containing the Project sign-up data.
+   * @param res - Express response object to send the response.
+   */
+  async CreateProjectToken(req: Request, res: Response) {
+    const session = null;
+    const currentUser = res.locals.currentUser;
+    try {
+      /************ Extract validated fetch project data ************/
+      const validatedFetchProjectRequest = res.locals.validatedFetchProjectRequest;
+      const { id } = validatedFetchProjectRequest;
+
+      if (!Utils.isObjectId(id)) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'not a valid id.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Extract validated create project token data ************/
+      const validatedCreateProjectTokenRequestBody = res.locals.validatedCreateProjectTokenRequestBody;
+      const { email, databaseVersion, duration } = validatedCreateProjectTokenRequestBody;
+
+      /************ Find Project by email or phone number ************/
+      const project = await ProjectController.projectService.findOneMongo(
+        {
+          _id: id, // id is the name in this case,
+        },
+        {},
+        { session },
+      );
+
+      /************ Handle invalid credentials ************/
+      if (!project.status || project.data.owner.toString() !== currentUser._id.toString() || currentUser.email !== email) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'invalid credentials.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Generate access token ************/
+      const payload = {
+        email,
+        databaseVersion,
+        projectId: id,
+        projectName: project.data.name,
+        duration,
+      };
+
+      const projectToken = Utils.createToken(payload, `${String(duration)}d`);
+
+      const encryptedProjectToken = CryptoUtils.aesEncrypt(projectToken, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+      /************ Create the Project by email ************/
+      const token = await ProjectController.tokenService.updateOneMongo(
+        {
+          token: encryptedProjectToken,
+          projectId: id,
+        },
+        {
+          userId: currentUser._id,
+          type: Token.PROJECT,
+          duration,
+        },
+        { session },
+      );
+
+      if (!token.status) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'failed to create token.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Commit the transaction and send a successful response ************/
+      await session?.commitTransaction();
+      session?.endSession();
+
+      return Utils.apiResponse<ProjectDocument>(
+        res,
+        StatusCode.CREATED,
+        {
+          projectToken: encryptedProjectToken,
+        },
+        {
+          user: LogUsers.PROJECT,
+          action: LogAction.CREATE_PROJECT_TOKEN,
+          message: 'token created.',
+          status: LogStatus.SUCCESS,
+          serviceLog: ProjectModel,
+          options: {
+            email: '',
+          },
+        },
+      );
+    } catch (error) {
+      console.log(error);
+      !session.transaction.isActive && (await session.abortTransaction());
+      session?.endSession();
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<ProjectDocument>(
+        res,
+        StatusCode.INTERNAL_SERVER_ERROR,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.PROJECT,
+          action: LogAction.CREATE_PROJECT,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: ProjectModel,
+          options: {},
+        },
+      );
+    } finally {
+      session?.endSession();
+    }
+  }
 
   /**
    * Handles the Project creation process.
@@ -211,11 +352,11 @@ class ProjectController extends BaseController {
   async FetchProject(req: Request, res: Response) {
     const session = null;
     try {
-      /************ Extract validated create project data ************/
+      /************ Extract validated fetch project data ************/
       const validatedFetchProjectRequest = res.locals.validatedFetchProjectRequest;
       const { id } = validatedFetchProjectRequest;
 
-      if (!mongoose.isValidObjectId(id)) {
+      if (!Utils.isObjectId(id)) {
         return ProjectController.abortTransactionWithResponse(
           res,
           StatusCode.BAD_REQUEST,

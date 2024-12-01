@@ -1,18 +1,18 @@
 import { Request, Response } from 'express';
 import { UserDocument, UserModel } from '@/services/mongodb';
 import { LogAction, LogStatus, LogUsers, StatusCode, OtpRequestType } from '@/@types';
-import { Utils } from '@/utils';
+import { CryptoUtils, Utils } from '@/utils';
 import { Model } from '@/services';
 import { BaseController } from './00_base.controller';
 import { AddToBlacklist } from '@/utils';
-import { NODE_ENV } from '@/config';
+import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER, NODE_ENV } from '@/config';
 
 /**
  * AuthController handles the sign-in process for users.
  * It includes multi-factor authentication (MFA) handling and user session management.
  */
 class AuthController extends BaseController {
-  private static staticsInResponse: [LogUsers, LogAction, Model<UserDocument>] = [LogUsers.AUTH, LogAction.SIGNIN, UserModel];
+  private static staticsInResponse: [LogUsers, LogAction, Model<UserDocument>] = [LogUsers.AUTH, LogAction.ERROR, UserModel];
 
   /**
    * Handles the otp sending process during signup and password verification.
@@ -709,21 +709,25 @@ class AuthController extends BaseController {
   async SigninWithCli(req: Request, res: Response) {
     const session = null;
     try {
-      /************ Extract token data from authorization process ************/
-      const tokenData = res.locals.tokenData;
+      /************ Extract validated sign-in data ************/
+      const validatedSignInWCliRequestBody = res.locals.validatedSignInWCliRequestBody;
+
+      const { email, password, principalId, username, projectTokenRef } = validatedSignInWCliRequestBody;
+
+      console.log({ validatedSignInWCliRequestBody });
 
       /************ Find user by email or phone number ************/
       const auth = await AuthController.userService.findOneMongo(
         {
-          email: tokenData.email,
+          email,
           deleted: false,
         },
         {},
-        { session, hiddenFields: ['password'] },
+        { session },
       );
 
       /************ Handle invalid credentials ************/
-      if (auth.status) {
+      if (!auth.status) {
         return AuthController.abortTransactionWithResponse(
           res,
           StatusCode.BAD_REQUEST,
@@ -736,10 +740,6 @@ class AuthController extends BaseController {
           },
         );
       }
-      /************ Extract validated sign-in data ************/
-      const validatedSignInWCliRequestBody = res.locals.validatedSignInWCliRequestBody;
-
-      const { password, principalId, username, canisterDetails } = validatedSignInWCliRequestBody;
 
       /************ Validate password ************/
       const valid = Utils.comparePasswords(password, auth.data.password);
@@ -753,7 +753,7 @@ class AuthController extends BaseController {
           LogStatus.FAIL,
           ...AuthController.staticsInResponse,
           {
-            email: tokenData.email,
+            email,
           },
         );
       }
@@ -761,19 +761,18 @@ class AuthController extends BaseController {
       /************ updated user canister details ************/
       const userUpdate = await AuthController.userService.updateOneMongo(
         {
-          email: tokenData.email,
-          principalId,
-          username,
+          email,
           deleted: false,
         },
         {
-          canisterDetails: [...auth.data.canisterDetails, ...canisterDetails],
+          principalId,
+          username,
         },
-        { session, hiddenFields: ['password'] },
+        { session },
       );
 
       /************ Handle invalid credentials ************/
-      if (userUpdate.status) {
+      if (!userUpdate.status) {
         return AuthController.abortTransactionWithResponse(
           res,
           StatusCode.BAD_REQUEST,
@@ -787,15 +786,43 @@ class AuthController extends BaseController {
         );
       }
 
+      const token = await AuthController.tokenService.findOneMongo({ token: projectTokenRef }, {}, { session });
+
+      if (!token.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'token validation failed.',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      const decryptedToken = CryptoUtils.aesDecrypt(projectTokenRef, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+      console.log({ decryptedToken });
+
+      const tokenPayload = Utils.verifyToken(decryptedToken);
+
+      console.log({ tokenPayload });
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { iat, exp, ...rest } = tokenPayload as any;
+
       /************ Generate access token ************/
       const payload = {
-        email: tokenData.email,
+        email,
+        ...rest,
       };
 
       /************ Generate access token ************/
       const accessToken = Utils.createToken(payload);
 
-      // send sign in notification.
+      // send cli sign in notification and activate the token with the request.
 
       /************ Commit the transaction and send a successful response ************/
       await session?.commitTransaction();
@@ -814,7 +841,7 @@ class AuthController extends BaseController {
           status: LogStatus.SUCCESS,
           serviceLog: UserModel,
           options: {
-            email: tokenData.email,
+            email,
           },
         },
       );
@@ -851,7 +878,7 @@ class AuthController extends BaseController {
     try {
       console.log({ currentUser: res.locals.currentUser });
       res.locals.currentUser = null;
-      const token = await Utils.checkToken(req);
+      const token = Utils.checkToken(req);
 
       AddToBlacklist(token);
 

@@ -148,14 +148,34 @@ export const SigninWithGoogleMiddleware = async (req: Request, res: Response, ne
     const { value, error } = Utils.validateJoiSchema(ValidateGoogleAuthRequest, req.query);
 
     if (error) {
-      next(new ApiError(error, 'SigninWithEPMiddleware', StatusCode.UNAUTHORIZED));
+      next(new ApiError(error, 'SigninWithGoogleMiddleware', StatusCode.UNAUTHORIZED));
     }
 
     res.locals.validatedSignInWGoogleRequest = value;
 
     next();
   } catch (error) {
-    next(new ApiError(error.message || error, 'SigninWithEPMiddleware', StatusCode.UNAUTHORIZED));
+    next(new ApiError(error.message || error, 'SigninWithGoogleMiddleware', StatusCode.UNAUTHORIZED));
+  }
+};
+
+export const SigninWithCliMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
+
+    if (error) {
+      next(new ApiError(error, 'SigninWithCliMiddleware', StatusCode.UNAUTHORIZED));
+    }
+
+    const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+    const requestObject = JSON.parse(decryptedRequest);
+
+    res.locals.validatedSignInWCliRequestBody = requestObject;
+
+    next();
+  } catch (error) {
+    next(new ApiError(error.message || error, 'SigninWithCliMiddleware', StatusCode.UNAUTHORIZED));
   }
 };
 
@@ -174,7 +194,7 @@ export const CheckTokenMiddleware = async (req: Request, res: Response, next: Ne
       }
     }
 
-    const payload = (await Utils.verifyToken(token)) as any;
+    const payload = Utils.verifyToken(token) as any;
 
     const user = await userService.findOneMongo(
       {

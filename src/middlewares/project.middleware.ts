@@ -3,6 +3,26 @@ import { ValidateRequests } from '@/validations/validations';
 import { Utils, ApiError, CryptoUtils } from '@/utils';
 import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER } from '@/config';
 
+export const CreateProjectTokenMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
+
+    if (error) {
+      next(new ApiError(error, 'CreateProjectTokenMiddleware', 401));
+    }
+
+    const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+    const requestObject = JSON.parse(decryptedRequest);
+
+    res.locals.validatedCreateProjectTokenRequestBody = requestObject;
+
+    next();
+  } catch (error) {
+    next(new ApiError(error.message || error, 'CreateProjectTokenMiddleware', 401));
+  }
+};
+
 export const CreateProjectMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);

@@ -57,6 +57,7 @@ export enum LogAction {
   CREATE = 'create',
   GET_AUTH_URL = 'get_auth_url',
   CREATE_PROJECT = 'create_project',
+  CREATE_PROJECT_TOKEN = 'create_project_token',
   FETCH_PROJECT = 'fetch_project',
   FETCH_PROJECTS = 'fetch_projects',
   UPDATE = 'update',
@@ -79,6 +80,7 @@ export enum LogAction {
   EMAIL_VERIFICATION = 'email_verification',
   PHONE_VERIFICATION = 'phone_verification',
   PLAID_VERIFICATION = 'plaid_verification',
+  ERROR = 'error',
 }
 
 export enum LogStatus {

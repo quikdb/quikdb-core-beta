@@ -128,7 +128,7 @@ export class Utils {
     return token || null;
   }
 
-  static async verifyToken(token: string): Promise<string | JwtPayload | boolean | object> {
+  static verifyToken(token: string): string | JwtPayload | boolean | object {
     try {
       const response = verify(token, JWT_SECRET_KEY as string);
       return response;

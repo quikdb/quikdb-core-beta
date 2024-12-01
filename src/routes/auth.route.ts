@@ -11,6 +11,7 @@ import {
   VerifyOtpMiddleware,
   SignupWithEPMiddleware,
   SigninWithGoogleMiddleware,
+  SigninWithCliMiddleware,
 } from '@/middlewares';
 
 /** Import interfaces */
@@ -31,6 +32,7 @@ export class AuthRoute implements Routes {
     this.router.post(`${this.path}/verifyOtp`, VerifyOtpMiddleware, AuthController.VerifyOtp);
     this.router.post(`${this.path}/signupWithEP`, SignupWithEPMiddleware, AuthController.SignupWithEmailAndPassword);
     this.router.post(`${this.path}/signinWithEP`, SigninWithEPMiddleware, AuthController.SigninWithEmailAndPassword);
+    this.router.post(`${this.path}/signinWithCli`, SigninWithCliMiddleware, AuthController.SigninWithCli);
     this.router.get(`${this.path}/signout`, CheckTokenMiddleware, AuthController.Signout);
   }
 }
