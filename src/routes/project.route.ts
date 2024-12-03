@@ -22,5 +22,6 @@ export class ProjectRoute implements Routes {
     this.router.get(`${this.path}`, ProjectController.FetchProjects);
     this.router.get(`${this.path}/:data`, FetchProjectMiddleware, ProjectController.FetchProject);
     this.router.post(`${this.path}/:data/token`, [FetchProjectMiddleware, CreateProjectTokenMiddleware], ProjectController.CreateProjectToken);
+    this.router.get(`${this.path}/:data/token`, [FetchProjectMiddleware], ProjectController.GetProjectTokens);
   }
 }

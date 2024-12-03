@@ -58,6 +58,7 @@ export enum LogAction {
   GET_AUTH_URL = 'get_auth_url',
   CREATE_PROJECT = 'create_project',
   CREATE_PROJECT_TOKEN = 'create_project_token',
+  FETCH_PROJECT_TOKEN = 'fetch_project_token',
   FETCH_PROJECT = 'fetch_project',
   FETCH_PROJECTS = 'fetch_projects',
   UPDATE = 'update',

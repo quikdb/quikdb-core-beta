@@ -159,6 +159,145 @@ class ProjectController extends BaseController {
    * @param req - Express request object containing the Project sign-up data.
    * @param res - Express response object to send the response.
    */
+  async GetProjectTokens(req: Request, res: Response) {
+    const session = null;
+    const currentUser = res.locals.currentUser;
+    try {
+      /************ Extract validated fetch project data ************/
+      const validatedFetchProjectRequest = res.locals.validatedFetchProjectRequest;
+      const { id } = validatedFetchProjectRequest;
+
+      if (!Utils.isObjectId(id)) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'not a valid id.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Find Project by email or phone number ************/
+      const project = await ProjectController.projectService.findOneMongo(
+        {
+          _id: id,
+        },
+        {},
+        { session },
+      );
+
+      /************ Handle invalid credentials ************/
+      if (!project.status || project.data.owner.toString() !== currentUser._id.toString()) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'invalid credentials.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Create the Project by email ************/
+      const token = await ProjectController.tokenService.findMongo(
+        {
+          userId: currentUser._id.toString(),
+          projectId: id,
+        },
+        { session },
+      );
+
+      if (!token.status) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'failed to get token(s).',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Commit the transaction and send a successful response ************/
+      await session?.commitTransaction();
+      session?.endSession();
+
+      if (token.data.length === 0) {
+        return Utils.apiResponse<ProjectDocument>(
+          res,
+          StatusCode.OK,
+          {
+            tokens: [],
+          },
+          {
+            user: LogUsers.PROJECT,
+            action: LogAction.FETCH_PROJECT_TOKEN,
+            message: 'no tokens found.',
+            status: LogStatus.SUCCESS,
+            serviceLog: ProjectModel,
+            options: {
+              email: '',
+            },
+          },
+        );
+      }
+
+      return Utils.apiResponse<ProjectDocument>(
+        res,
+        StatusCode.OK,
+        {
+          tokens: token.data,
+        },
+        {
+          user: LogUsers.PROJECT,
+          action: LogAction.FETCH_PROJECT_TOKEN,
+          message: 'tokens found.',
+          status: LogStatus.SUCCESS,
+          serviceLog: ProjectModel,
+          options: {
+            email: '',
+          },
+        },
+      );
+    } catch (error) {
+      console.log(error);
+      !session.transaction.isActive && (await session.abortTransaction());
+      session?.endSession();
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<ProjectDocument>(
+        res,
+        StatusCode.INTERNAL_SERVER_ERROR,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.PROJECT,
+          action: LogAction.CREATE_PROJECT,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: ProjectModel,
+          options: {},
+        },
+      );
+    } finally {
+      session?.endSession();
+    }
+  }
+
+  /**
+   * Handles the Project creation process.
+   * @param req - Express request object containing the Project sign-up data.
+   * @param res - Express response object to send the response.
+   */
   async CreateProject(req: Request, res: Response) {
     const session = null;
     try {
