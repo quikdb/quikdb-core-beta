@@ -51,7 +51,7 @@ export class App {
         console.log(`=================================`);
       });
     } catch (err) {
-      console.error('Failed to initialize Redis client:', err);
+      console.error('Failed to initialize Mongo:', err);
       process.exit(1);
     }
   }

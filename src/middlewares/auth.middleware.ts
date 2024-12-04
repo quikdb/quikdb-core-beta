@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { ValidateRequests, ValidateGoogleAuthRequest } from '@/validations/validations';
+import { ValidateRequests, ValidateAuthRequest, ValidateGoogleAuthRequest } from '@/validations/validations';
 import { Utils, ApiError, CryptoUtils } from '@/utils';
 import { UserDocument, UserModel } from '@/services/mongodb';
 import { MongoApiService } from '@/services';
@@ -160,18 +160,17 @@ export const SigninWithGoogleMiddleware = async (req: Request, res: Response, ne
 };
 
 export const SigninWithCliMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  console.log({ req: req.body });
   try {
-    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
+    const { value, error } = Utils.validateJoiSchema(ValidateAuthRequest, req.body);
+
+    console.log({ value });
 
     if (error) {
       next(new ApiError(error, 'SigninWithCliMiddleware', StatusCode.UNAUTHORIZED));
     }
 
-    const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
-
-    const requestObject = JSON.parse(decryptedRequest);
-
-    res.locals.validatedSignInWCliRequestBody = requestObject;
+    res.locals.validatedSignInWCliRequestBody = value;
 
     next();
   } catch (error) {

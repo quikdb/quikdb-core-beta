@@ -30,6 +30,15 @@ export const ValidateAuthRequest = Joi.object({
   password: Joi.string().min(8).max(15).required().label('password').messages({
     string: 'password of valid length is required',
   }),
+  principalId: Joi.string().optional().label('principal').messages({
+    string: 'principal is not valid',
+  }),
+  username: Joi.string().optional().label('username').messages({
+    string: 'username is not valid',
+  }),
+  projectTokenRef: Joi.string().optional().label('projectTokenRef').messages({
+    string: 'projectTokenRef is not valid',
+  }),
 });
 
 export const ValidateGoogleAuthRequest = Joi.object({
