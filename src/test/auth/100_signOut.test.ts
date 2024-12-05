@@ -19,6 +19,6 @@ describe('Integration Test: Auth Module', () => {
         action: LogAction.READ,
         message: 'user signed out',
       });
-    });
+    }, 10000);
   });
 });

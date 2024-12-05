@@ -11,6 +11,6 @@ describe('Integration Test: Auth Module', () => {
       console.log('Test Response:', response.redirects);
 
       expect(response.redirect).toBeTruthy();
-    }, 20000);
+    }, 10000);
   });
 });

@@ -28,6 +28,6 @@ describe('Integration Test: Auth Module', () => {
         action: LogAction.FETCH_PROJECT,
         message: 'project found.',
       });
-    });
+    }, 10000);
   });
 });

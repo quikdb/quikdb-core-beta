@@ -27,6 +27,6 @@ describe('Integration Test: Auth Module', () => {
         code: StatusCode.OK,
         action: LogAction.FETCH_PROJECT_TOKEN,
       });
-    });
+    }, 10000);
   });
 });

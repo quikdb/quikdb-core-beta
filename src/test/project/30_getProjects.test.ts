@@ -19,6 +19,6 @@ describe('Integration Test: Auth Module', () => {
         action: LogAction.FETCH_PROJECTS,
         message: 'projects found.',
       });
-    });
+    }, 10000);
   });
 });

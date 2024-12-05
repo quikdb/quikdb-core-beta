@@ -31,6 +31,6 @@ describe('Integration Test: Auth Module', () => {
         action: LogAction.SEND,
         message: 'otp sent.',
       });
-    }, 20000);
+    }, 10000);
   });
 });

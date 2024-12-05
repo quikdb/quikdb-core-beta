@@ -30,6 +30,6 @@ describe('Integration Test: Auth Module', () => {
         action: LogAction.SIGNIN,
         message: 'signin success.',
       });
-    });
+    }, 10000);
   });
 });

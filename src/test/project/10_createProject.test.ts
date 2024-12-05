@@ -30,6 +30,6 @@ describe('Integration Test: Auth Module', () => {
         action: LogAction.CREATE_PROJECT,
         message: 'Project created.',
       });
-    });
+    }, 10000);
   });
 });

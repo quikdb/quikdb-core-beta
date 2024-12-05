@@ -33,6 +33,6 @@ describe('Integration Test: Auth Module', () => {
         action: LogAction.VERIFY_OTP,
         message: 'email otp verified.',
       });
-    }, 20000);
+    }, 10000);
   });
 });
