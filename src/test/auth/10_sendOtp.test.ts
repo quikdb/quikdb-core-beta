@@ -2,7 +2,7 @@ import { LogAction, LogStatus, StatusCode } from '@/@types';
 import { NODE_ENV, API_BASE_URL, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER } from '@/config';
 import { CryptoUtils } from '@/utils';
 import request from 'supertest';
-import { testEmail } from '../constants';
+import { testEmail } from '../constants.test';
 
 // const BASE_URL = API_BASE_URL;
 const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';

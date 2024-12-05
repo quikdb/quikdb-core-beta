@@ -47,7 +47,8 @@ class ProjectController extends BaseController {
       /************ Find Project by email or phone number ************/
       const project = await ProjectController.projectService.findOneMongo(
         {
-          _id: id, // id is the name in this case,
+          _id: id,
+          owner: currentUser._id,
         },
         {},
         { session },
@@ -185,6 +186,7 @@ class ProjectController extends BaseController {
       const project = await ProjectController.projectService.findOneMongo(
         {
           _id: id,
+          owner: currentUser._id,
         },
         {},
         { session },
@@ -300,6 +302,7 @@ class ProjectController extends BaseController {
    */
   async CreateProject(req: Request, res: Response) {
     const session = null;
+    const currentUser = res.locals.currentUser;
     try {
       /************ Extract validated create project data ************/
       const validatedCreateProjectRequestBody = res.locals.validatedCreateProjectRequestBody;
@@ -309,6 +312,7 @@ class ProjectController extends BaseController {
       const project = await ProjectController.projectService.findOneMongo(
         {
           name: id, // id is the name in this case,
+          owner: currentUser._id,
         },
         {},
         { session },
@@ -332,7 +336,7 @@ class ProjectController extends BaseController {
       const projectData = await ProjectController.projectService.createMongo(
         {
           name: id, // id is the name in this case,
-          owner: res.locals.currentUser._id,
+          owner: currentUser._id,
         },
         { session },
       );
@@ -490,6 +494,7 @@ class ProjectController extends BaseController {
    */
   async FetchProject(req: Request, res: Response) {
     const session = null;
+    const currentUser = res.locals.currentUser;
     try {
       /************ Extract validated fetch project data ************/
       const validatedFetchProjectRequest = res.locals.validatedFetchProjectRequest;
@@ -513,6 +518,7 @@ class ProjectController extends BaseController {
       const project = await ProjectController.projectService.findOneMongo(
         {
           _id: id,
+          owner: currentUser._id,
         },
         {},
         { session },

@@ -1,7 +1,7 @@
 import { LogAction, LogStatus, StatusCode } from '@/@types';
 import { NODE_ENV, API_BASE_URL } from '@/config';
 import request from 'supertest';
-import { testEmail } from '../constants';
+import { testEmail } from '../constants.test';
 
 const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';
 

@@ -195,6 +195,8 @@ export const CheckTokenMiddleware = async (req: Request, res: Response, next: Ne
 
     const payload = Utils.verifyToken(token) as any;
 
+    console.log({ payload });
+
     const user = await userService.findOneMongo(
       {
         email: payload.email,
@@ -205,7 +207,7 @@ export const CheckTokenMiddleware = async (req: Request, res: Response, next: Ne
     );
 
     if (!user.status) {
-      return next(new ApiError('user not found', 'AuthMiddleware', StatusCode.UNAUTHORIZED));
+      return next(new ApiError('user authorization failed.', 'AuthMiddleware', StatusCode.UNAUTHORIZED));
     }
 
     res.locals.currentUser = user.data;

@@ -485,7 +485,7 @@ class AuthController extends BaseController {
         email,
       };
 
-      const accessToken = Utils.createToken(payload);
+      const accessToken = Utils.createToken(payload, '1d');
 
       // send sign in notification.
 
