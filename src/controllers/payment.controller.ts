@@ -77,6 +77,8 @@ class PaymentController extends BaseController {
       const validatedCapturePaypalOrderRequest = res.locals.validatedCapturePaypalOrderRequest;
       const { OrderID } = validatedCapturePaypalOrderRequest;
 
+      console.log({ OrderID });
+
       /************ Find PAYPAL by email or phone number ************/
       const response = await PaymentController.paymentService.capturePaypalOrder(OrderID);
 

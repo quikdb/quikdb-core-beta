@@ -1,6 +1,5 @@
 import { DatabaseVersion, LogAction, LogStatus, StatusCode } from '@/@types';
-import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER, NODE_ENV, API_BASE_URL } from '@/config';
-import { CryptoUtils } from '@/utils';
+import { NODE_ENV, API_BASE_URL } from '@/config';
 import request from 'supertest';
 import { tokenForSamson } from '../constants.test';
 
@@ -10,18 +9,17 @@ const token = tokenForSamson;
 describe('Integration Test: Payment Module', () => {
   describe('[POST] /v/pay', () => {
     it('should create an order for paypal.', async () => {
-      const data = JSON.stringify({
+      const data = {
         amount: 100,
         databaseVersion: DatabaseVersion.PREMIUM,
-      });
+      };
 
-      const encryptedData = CryptoUtils.aesEncrypt(data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
-
-      console.log({ encryptedData });
-
-      const response = await request(BASE_URL).post('/v/pay').set('Authorization', token).send({
-        data: encryptedData,
-      });
+      const response = await request(BASE_URL)
+        .post('/v/pay')
+        .set('Authorization', token)
+        .send({
+          ...data,
+        });
 
       console.log('Test Response:', response.body);
 
