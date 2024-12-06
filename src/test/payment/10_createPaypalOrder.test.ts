@@ -10,7 +10,7 @@ describe('Integration Test: Payment Module', () => {
   describe('[POST] /v/pay', () => {
     it('should create an order for paypal.', async () => {
       const data = {
-        amount: 100,
+        amount: 10,
         databaseVersion: DatabaseVersion.PREMIUM,
       };
 

@@ -9,7 +9,7 @@ const token = tokenForSamson;
 describe('Integration Test: Auth Module', () => {
   describe('[POST] /v/p/:data', () => {
     it('should fetch a project for the logged in user.', async () => {
-      const OrderID = '5W396947RM787023U';
+      const OrderID = '697145068K9524040';
 
       const response = await request(BASE_URL).get(`/v/pay/${OrderID}`).set('Authorization', token);
 
