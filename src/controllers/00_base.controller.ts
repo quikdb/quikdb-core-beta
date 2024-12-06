@@ -1,7 +1,16 @@
 import { Response } from 'express';
 import { LogAction, LogStatus, LogUsers, StatusCode, LogType } from '@/@types';
 import { Utils } from '@/utils';
-import { ClientSession, Model, UserMongoService, GoogleAuthService, OtpMongoService, ProjectMongoService, TokenMongoService } from '@/services';
+import {
+  ClientSession,
+  Model,
+  UserMongoService,
+  GoogleAuthService,
+  OtpMongoService,
+  ProjectMongoService,
+  TokenMongoService,
+  PaymentService,
+} from '@/services';
 
 /**
  */
@@ -10,6 +19,7 @@ export class BaseController {
   protected static otpService = OtpMongoService;
   protected static projectService = ProjectMongoService;
   protected static tokenService = TokenMongoService;
+  protected static paymentService = PaymentService;
   protected static googleService = GoogleAuthService;
   /**
    * Aborts the current transaction and sends an error response.

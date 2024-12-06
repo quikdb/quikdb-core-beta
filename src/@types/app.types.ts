@@ -44,7 +44,7 @@ export enum LogUsers {
   AUTH = 'auth.service',
   PROJECT = 'project.service',
   TRANSACTION = 'transaction.service',
-  PAYSTACK = 'paystack.service',
+  PAYPAL = 'paypal.service',
   STRIPE = 'stripe.service',
   PREMBLY = 'prembly.service',
   PLAID = 'plaid.service',
@@ -82,6 +82,8 @@ export enum LogAction {
   PHONE_VERIFICATION = 'phone_verification',
   PLAID_VERIFICATION = 'plaid_verification',
   ERROR = 'error',
+  CREATE_PAYPAL_ORDER = 'create_paypal_order',
+  CAPTURE_PAYPAL_ORDER = 'capture_paypal_order',
 }
 
 export enum LogStatus {
@@ -115,32 +117,6 @@ export type GenericType = {
 };
 
 export type GenericAnyType = any;
-
-export enum ResponseCodes {
-  SUCCESS = '00',
-  FAILURE = '01',
-  PARTIAL_SUCCESS = '02',
-  VALIDATION_ERROR = '06',
-  UNKNOWN_ACCOUNT = '07',
-  PROCESSING_IN_PROGRESS = '09',
-  INVALID_TRANSACTION_TYPE = '12',
-  INVALID_AMOUNT = '13',
-  INVALID_TRANSACTION_NUMBER = '14',
-  NO_ACTION_TAKEN = '21',
-  RECORD_NOT_FOUND = '23',
-  DUPLICATE_RECORD = '26',
-  FORMAT_ERROR = '30',
-  INSUFFICIENT_FUNDS = '50',
-  INVALID_SERVICE_ACCOUNT = '54',
-  TRANSFER_LIMIT_EXCEEDED = '61',
-  SECURITY_VIOLATION = '63',
-  EXCEEDS_TRANSACTION_FREQUENCY = '65',
-  DEBIT_ACCOUNT_BLOCKED = '69',
-  DUPLICATE_TRANSACTION = '94',
-  SYSTEM_MALFUNCTION = '96',
-  SYSTEM_UNAVAILABLE = '97',
-  AUTHENTICATION_ERROR = '99',
-}
 
 export type FunctionResponseType = {
   status: string;

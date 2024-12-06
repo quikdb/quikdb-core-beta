@@ -7,11 +7,10 @@ import { BaseController } from './00_base.controller';
 import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER } from '@/config';
 
 /**
- * ProjectControllers handles the sign-in process for Projects.
- * It includes multi-factor authentication (MFA) handling and Project session management.
+ * ProjectControllers handles the crud process for Projects.
  */
 class ProjectController extends BaseController {
-  private static staticsInResponse: [LogUsers, LogAction, Model<ProjectDocument>] = [LogUsers.AUTH, LogAction.ERROR, ProjectModel];
+  private static staticsInResponse: [LogUsers, LogAction, Model<ProjectDocument>] = [LogUsers.PROJECT, LogAction.ERROR, ProjectModel];
 
   /**
    * Handles the Project creation process.

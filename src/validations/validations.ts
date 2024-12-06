@@ -77,3 +77,22 @@ export const ValidateCreateProjectRequest = Joi.object({
     string: 'duration is required in days',
   }),
 });
+
+export const ValidateCreatePaypalOrderRequest = Joi.object({
+  amount: Joi.number().required().label('amount').messages({
+    string: 'valid amount is required in usd',
+  }),
+  databaseVersion: Joi.string()
+    .required()
+    .valid(...Object.values(DatabaseVersion))
+    .label('database version')
+    .messages({
+      string: `Database version of either ${Object.values(DatabaseVersion).join(', ')} is required`,
+    }),
+});
+
+export const ValidateCapturePaypalOrderRequest = Joi.object({
+  OrderID: Joi.string().required().label('OrderID').messages({
+    string: 'valid OrderID is required',
+  }),
+});

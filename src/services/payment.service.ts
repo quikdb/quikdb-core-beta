@@ -1,73 +1,108 @@
 import Stripe from 'stripe';
-import paypal from 'paypal-rest-sdk';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { ApiError as PaystackApiError, CheckoutPaymentIntent, Client, Environment, LogLevel, OrdersController } from '@paypal/paypal-server-sdk';
+import axios from 'axios';
+import { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_URL } from '@/config';
+import { ApiError } from '@/utils';
 
 const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: '2024-10-28.acacia',
+  apiVersion: '2024-11-20.acacia',
 });
 
-paypal.configure({
-  mode: 'sandbox', // Change to 'live' in production
-  client_id: process.env.PAYPAL_CLIENT_ID,
-  client_secret: process.env.PAYPAL_CLIENT_SECRET,
-});
+export class PaymentService {
+  private static paypalConfig = {
+    clientCredentialsAuthCredentials: {
+      oAuthClientId: PAYPAL_CLIENT_ID,
+      oAuthClientSecret: PAYPAL_CLIENT_SECRET,
+    },
+    timeout: 0,
+    environment: Environment.Sandbox,
+    logging: {
+      logLevel: LogLevel.Info,
+      logRequest: {
+        logBody: true,
+      },
+      logResponse: {
+        logHeaders: true,
+      },
+    },
+  };
+  private static client = new Client(this.paypalConfig);
 
-class PaymentService {
-  async createStripePaymentIntent(amount: number): Promise<Stripe.PaymentIntent> {
+  private static ordersController = new OrdersController(this.client);
+
+  static async getPaypalAccessToken() {
+    const url = `${PAYPAL_URL}/v1/oauth2/token`;
+    const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
+
+    try {
+      const response = await axios.post(url, 'grant_type=client_credentials', {
+        headers: {
+          Authorization: `Basic ${auth}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+      return response.data.access_token;
+    } catch (error) {
+      console.error('Error obtaining PayPal access token:', error.response?.data || error.message);
+      throw new ApiError('Failed to get PayPal OAuth token');
+    }
+  }
+
+  static async createPaypalOrder(paypalOrderRequest: { amount: string }) {
+    try {
+      const token = await this.getPaypalAccessToken();
+      const collect = {
+        body: {
+          intent: CheckoutPaymentIntent.Capture,
+          purchaseUnits: [
+            {
+              amount: {
+                currencyCode: 'USD',
+                value: paypalOrderRequest.amount,
+              },
+            },
+          ],
+        },
+        prefer: 'return=minimal',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      return await this.ordersController.ordersCreate(collect);
+    } catch (error) {
+      if (error instanceof PaystackApiError) {
+        // const { statusCode, headers } = error;
+        throw new ApiError(error.message, 'createPaypalOrder', error.statusCode);
+      }
+    }
+  }
+
+  static async capturePaypalOrder(orderID: string) {
+    try {
+      const token = await this.getPaypalAccessToken();
+      const collect = {
+        id: orderID,
+        prefer: 'return=minimal',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      return await this.ordersController.ordersCapture(collect);
+    } catch (error) {
+      if (error instanceof PaystackApiError) {
+        throw new ApiError(error.message, 'capturePaypalOrder', error.statusCode);
+      }
+    }
+  }
+
+  static async createStripePaymentIntent(amount: number): Promise<Stripe.PaymentIntent> {
     return await stripeInstance.paymentIntents.create({
       amount: amount * 100, // Stripe expects amount in cents
       currency: 'usd',
     });
   }
 
-  async verifyStripePayment(paymentIntentId: string): Promise<Stripe.PaymentIntent | null> {
+  static async verifyStripePayment(paymentIntentId: string): Promise<Stripe.PaymentIntent | null> {
     return await stripeInstance.paymentIntents.retrieve(paymentIntentId);
   }
-
-  createPayPalPayment(amount: number, currency: 'USD'): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const create_payment_json = {
-        intent: 'sale',
-        payer: { payment_method: 'paypal' },
-        redirect_urls: {
-          return_url: 'http://localhost:5000/api/paypal/success',
-          cancel_url: 'http://localhost:5000/api/paypal/cancel',
-        },
-        transactions: [
-          {
-            amount: { currency, total: amount.toFixed(2) },
-            description: 'Credits Purchase',
-          },
-        ],
-      };
-
-      paypal.payment.create(create_payment_json, function (error, payment) {
-        if (error) reject(error);
-        else resolve(payment);
-      });
-    });
-  }
-
-  executePayPalPayment(paymentId: string, payerId: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const execute_payment_json = {
-        payer_id: payerId,
-      };
-
-      paypal.payment.execute(paymentId, execute_payment_json, function (error, payment) {
-        if (error) reject(error);
-        else resolve(payment);
-      });
-    });
-  }
-
-  async allocateCycles(userId: string, amount: number): Promise<void> {
-    // Define conversion rate, e.g., 1 USD = 10,000 cycles
-    const cycles = amount * 10000;
-    // await UserService.updateCycles(userId, cycles);
-  }
 }
-
-export default new PaymentService();
