@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ProjectDocument, ProjectModel } from '@/services/mongodb';
+import { ProjectDocument, ProjectModel, TokenDocument, TokenModel } from '@/services/mongodb';
 import { LogAction, LogStatus, LogUsers, StatusCode, Token } from '@/@types';
 import { CryptoUtils, Utils } from '@/utils';
 import { Model } from '@/services';
@@ -22,8 +22,8 @@ class ProjectController extends BaseController {
     const currentUser = res.locals.currentUser;
     try {
       /************ Extract validated fetch project data ************/
-      const validatedFetchProjectRequest = res.locals.validatedFetchProjectRequest;
-      const { id } = validatedFetchProjectRequest;
+      const validatedIdRequest = res.locals.validatedIdRequest;
+      const { id } = validatedIdRequest;
 
       if (!Utils.isObjectId(id)) {
         return ProjectController.abortTransactionWithResponse(
@@ -68,6 +68,29 @@ class ProjectController extends BaseController {
         );
       }
 
+      /************ Too many tokens created ***********/
+      const tokenCount = await ProjectController.tokenService.countMongo(
+        {
+          user: currentUser._id,
+        },
+        session,
+      );
+
+      /************ Handle too many tokens created ************/
+      if (!tokenCount.status || tokenCount.data > 10) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'too many tokens created.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
       /************ Generate access token ************/
       const payload = {
         email,
@@ -86,6 +109,7 @@ class ProjectController extends BaseController {
         {
           token: encryptedProjectToken,
           projectId: id,
+          userId: currentUser._id.toString(),
         },
         {
           userId: currentUser._id,
@@ -113,7 +137,7 @@ class ProjectController extends BaseController {
       await session?.commitTransaction();
       session?.endSession();
 
-      return Utils.apiResponse<ProjectDocument>(
+      return Utils.apiResponse<TokenDocument>(
         res,
         StatusCode.CREATED,
         {
@@ -124,7 +148,7 @@ class ProjectController extends BaseController {
           action: LogAction.CREATE_PROJECT_TOKEN,
           message: 'token created.',
           status: LogStatus.SUCCESS,
-          serviceLog: ProjectModel,
+          serviceLog: TokenModel,
           options: {
             email: '',
           },
@@ -136,7 +160,7 @@ class ProjectController extends BaseController {
       session?.endSession();
 
       /************ Send an error response ************/
-      return Utils.apiResponse<ProjectDocument>(
+      return Utils.apiResponse<TokenDocument>(
         res,
         StatusCode.INTERNAL_SERVER_ERROR,
         { devError: error.message || 'Server error' },
@@ -145,7 +169,7 @@ class ProjectController extends BaseController {
           action: LogAction.CREATE_PROJECT,
           message: JSON.stringify(error),
           status: LogStatus.FAIL,
-          serviceLog: ProjectModel,
+          serviceLog: TokenModel,
           options: {},
         },
       );
@@ -155,7 +179,7 @@ class ProjectController extends BaseController {
   }
 
   /**
-   * Handles the Project creation process.
+   * Handles the Project token fetching process.
    * @param req - Express request object containing the Project sign-up data.
    * @param res - Express response object to send the response.
    */
@@ -164,8 +188,8 @@ class ProjectController extends BaseController {
     const currentUser = res.locals.currentUser;
     try {
       /************ Extract validated fetch project data ************/
-      const validatedFetchProjectRequest = res.locals.validatedFetchProjectRequest;
-      const { id } = validatedFetchProjectRequest;
+      const validatedIdRequest = res.locals.validatedIdRequest;
+      const { id } = validatedIdRequest;
 
       if (!Utils.isObjectId(id)) {
         return ProjectController.abortTransactionWithResponse(
@@ -234,7 +258,7 @@ class ProjectController extends BaseController {
       session?.endSession();
 
       if (token.data.length === 0) {
-        return Utils.apiResponse<ProjectDocument>(
+        return Utils.apiResponse<TokenDocument>(
           res,
           StatusCode.OK,
           {
@@ -245,7 +269,7 @@ class ProjectController extends BaseController {
             action: LogAction.FETCH_PROJECT_TOKEN,
             message: 'no tokens found.',
             status: LogStatus.SUCCESS,
-            serviceLog: ProjectModel,
+            serviceLog: TokenModel,
             options: {
               email: '',
             },
@@ -299,6 +323,118 @@ class ProjectController extends BaseController {
    * @param req - Express request object containing the Project sign-up data.
    * @param res - Express response object to send the response.
    */
+  async DeleteProjectToken(req: Request, res: Response) {
+    const session = null;
+    const currentUser = res.locals.currentUser;
+    try {
+      /************ Extract validated fetch project data ************/
+      const validatedIdRequest = res.locals.validatedIdRequest;
+      const { id } = validatedIdRequest;
+
+      if (!Utils.isObjectId(id)) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'not a valid id.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Find Project token by ids ************/
+      const token = await ProjectController.tokenService.findOneMongo(
+        {
+          _id: id,
+          userId: currentUser._id,
+        },
+        {},
+        { session },
+      );
+
+      /************ Handle invalid credentials ************/
+      if (!token.status || token.data.userId.toString() !== currentUser._id.toString()) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'invalid request.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Create the Project by email ************/
+      const tokenData = await ProjectController.tokenService.deleteByIdMongo(id, { session });
+
+      if (!tokenData.status) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'failed to delete token.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Commit the transaction and send a successful response ************/
+      await session?.commitTransaction();
+      session?.endSession();
+
+      return Utils.apiResponse<TokenDocument>(
+        res,
+        StatusCode.OK,
+        {},
+        {
+          user: LogUsers.PROJECT,
+          action: LogAction.DELETE_PROJECT_TOKEN,
+          message: 'token deleted.',
+          status: LogStatus.SUCCESS,
+          serviceLog: TokenModel,
+          options: {
+            email: '',
+          },
+        },
+      );
+    } catch (error) {
+      console.log(error);
+      !session.transaction.isActive && (await session.abortTransaction());
+      session?.endSession();
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<TokenDocument>(
+        res,
+        StatusCode.INTERNAL_SERVER_ERROR,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.PROJECT,
+          action: LogAction.CREATE_PROJECT,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: TokenModel,
+          options: {},
+        },
+      );
+    } finally {
+      session?.endSession();
+    }
+  }
+
+  /**
+   * Handles the Project creation process.
+   * @param req - Express request object containing the Project sign-up data.
+   * @param res - Express response object to send the response.
+   */
   async CreateProject(req: Request, res: Response) {
     const session = null;
     const currentUser = res.locals.currentUser;
@@ -324,6 +460,29 @@ class ProjectController extends BaseController {
           StatusCode.BAD_REQUEST,
           session,
           'project name in use.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Too many projects created ***********/
+      const projectCount = await ProjectController.projectService.countMongo(
+        {
+          owner: currentUser._id,
+        },
+        session,
+      );
+
+      /************ Handle too many tokens created ************/
+      if (!projectCount.status || projectCount.data > 10) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'too many projects created.',
           LogStatus.FAIL,
           ...ProjectController.staticsInResponse,
           {
@@ -496,8 +655,8 @@ class ProjectController extends BaseController {
     const currentUser = res.locals.currentUser;
     try {
       /************ Extract validated fetch project data ************/
-      const validatedFetchProjectRequest = res.locals.validatedFetchProjectRequest;
-      const { id } = validatedFetchProjectRequest;
+      const validatedIdRequest = res.locals.validatedIdRequest;
+      const { id } = validatedIdRequest;
 
       if (!Utils.isObjectId(id)) {
         return ProjectController.abortTransactionWithResponse(
@@ -575,6 +734,118 @@ class ProjectController extends BaseController {
         {
           user: LogUsers.PROJECT,
           action: LogAction.FETCH_PROJECT,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: ProjectModel,
+          options: {},
+        },
+      );
+    } finally {
+      session?.endSession();
+    }
+  }
+
+  /**
+   * Handles the Project deletion process.
+   * @param req - Express request object containing the Project sign-up data.
+   * @param res - Express response object to send the response.
+   */
+  async DeleteProject(req: Request, res: Response) {
+    const session = null;
+    const currentUser = res.locals.currentUser;
+    try {
+      /************ Extract validated fetch project data ************/
+      const validatedIdRequest = res.locals.validatedIdRequest;
+      const { id } = validatedIdRequest;
+
+      if (!Utils.isObjectId(id)) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'not a valid id.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Find Project by email or phone number ************/
+      const project = await ProjectController.projectService.findOneMongo(
+        {
+          _id: id,
+          owner: currentUser._id,
+        },
+        {},
+        { session },
+      );
+
+      /************ Handle invalid credentials ************/
+      if (!project.status || project.data.owner.toString() !== currentUser._id.toString()) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'invalid request.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Create the Project by email ************/
+      const token = await ProjectController.projectService.deleteByIdMongo(id, { session });
+
+      if (!token.status) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'failed to delete token.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Commit the transaction and send a successful response ************/
+      await session?.commitTransaction();
+      session?.endSession();
+
+      return Utils.apiResponse<ProjectDocument>(
+        res,
+        StatusCode.OK,
+        {},
+        {
+          user: LogUsers.PROJECT,
+          action: LogAction.DELETE_PROJECT,
+          message: 'project deleted.',
+          status: LogStatus.SUCCESS,
+          serviceLog: ProjectModel,
+          options: {
+            email: '',
+          },
+        },
+      );
+    } catch (error) {
+      console.log(error);
+      !session.transaction.isActive && (await session.abortTransaction());
+      session?.endSession();
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<ProjectDocument>(
+        res,
+        StatusCode.INTERNAL_SERVER_ERROR,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.PROJECT,
+          action: LogAction.CREATE_PROJECT,
           message: JSON.stringify(error),
           status: LogStatus.FAIL,
           serviceLog: ProjectModel,

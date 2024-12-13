@@ -298,6 +298,15 @@ export class MongoApiService<T extends Document> extends MongoService<T> {
     }
   }
 
+  async countMongo(query: FilterQuery<T>, session?: ClientSession | null): Promise<ServiceResponse<number | null>> {
+    try {
+      const response = await this.countDocuments(query, session);
+      return this.createResponse<number>(true, response, 'count success');
+    } catch (error) {
+      return this.createResponse(false, null, 'Failed to count', error);
+    }
+  }
+
   async findMongo(query: FilterQuery<T>, options?: DbOptions): Promise<ServiceResponse<Require_id<FlattenMaps<T>>[] | null>> {
     try {
       const { data, total, page, limit } = await this.findAll(

@@ -43,22 +43,22 @@ export const CreateProjectMiddleware = async (req: Request, res: Response, next:
   }
 };
 
-export const FetchProjectMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+export const GetIdInRequestMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.params);
 
     if (error) {
-      next(new ApiError(error, 'FetchProjectMiddleware', 401));
+      next(new ApiError(error, 'GetIdInRequestMiddleware', 401));
     }
 
     const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
 
     const requestObject = JSON.parse(decryptedRequest);
 
-    res.locals.validatedFetchProjectRequest = requestObject;
+    res.locals.validatedIdRequest = requestObject;
 
     next();
   } catch (error) {
-    next(new ApiError(error.message || error, 'FetchProjectMiddleware', 401));
+    next(new ApiError(error.message || error, 'GetIdInRequestMiddleware', 401));
   }
 };
