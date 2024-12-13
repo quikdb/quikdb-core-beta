@@ -5,7 +5,9 @@ import request from 'supertest';
 import { projectId, tokenForSamson } from '../constants.test';
 
 const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';
-const token = tokenForSamson;
+// const token = tokenForSamson;
+const token =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNhbXNvbmFqdWxvckBnbWFpbC5jb20iLCJpYXQiOjE3MzQwNjE2MzEsImV4cCI6MTczNDE0ODAzMX0.xQWRhMPpNmmIqXkhPSxZTZ9Vpbf9Ure8uDeTh0hjBDs';
 
 describe('Integration Test: Auth Module', () => {
   describe('[POST] /v/p/:data', () => {
