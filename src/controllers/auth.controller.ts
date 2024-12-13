@@ -558,8 +558,24 @@ class AuthController extends BaseController {
           },
         );
       }
-      console.log({ redirect_url: auth.data });
-      res.redirect(auth.data);
+
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.OK,
+        {
+          redirectUrl: auth.data,
+        },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.READ,
+          message: 'success.',
+          status: LogStatus.SUCCESS,
+          serviceLog: UserModel,
+          options: {
+            email: '',
+          },
+        },
+      );
     } catch (error) {
       console.log(error);
 

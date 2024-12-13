@@ -1,8 +1,11 @@
 import * as mongoose from 'mongoose';
+import Grid from 'gridfs-stream';
 import { ApiError } from '../utils';
 import { StatusCode } from '../@types';
 import * as plugin from 'mongoose-lean-virtuals';
 import { AUTH_MONGO_URI } from '@/config';
+
+let gfs: Grid.Grid;
 
 class MongoDBClient {
   private static instance: MongoDBClient;
@@ -48,6 +51,13 @@ class MongoDBClient {
 
       this.connection.on('connected', () => {
         console.log('Mongoose connected successfully.');
+      });
+
+      this.connection.once('open', () => {
+        // Initialize the GridFS stream
+        gfs = Grid(this.connection.db, mongoose.mongo);
+        gfs.collection('fs');
+        console.log('MongoDB Connected & GridFS Initialized');
       });
 
       this.connection.on('error', err => {
