@@ -60,6 +60,7 @@ export enum LogAction {
   FETCH_PROJECT = 'fetch_project',
   DELETE_PROJECT = 'delete_project',
   FETCH_PROJECTS = 'fetch_projects',
+  UPLOAD_PROJECT_CODE = 'upload_project_code',
   CREATE_PROJECT_TOKEN = 'create_project_token',
   DELETE_PROJECT_TOKEN = 'delete_project_token',
   FETCH_PROJECT_TOKEN = 'fetch_project_token',

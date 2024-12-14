@@ -1,11 +1,7 @@
 import * as mongoose from 'mongoose';
-import Grid from 'gridfs-stream';
 import { ApiError } from '../utils';
 import { StatusCode } from '../@types';
-import * as plugin from 'mongoose-lean-virtuals';
 import { AUTH_MONGO_URI } from '@/config';
-
-let gfs: Grid.Grid;
 
 class MongoDBClient {
   private static instance: MongoDBClient;
@@ -34,7 +30,7 @@ class MongoDBClient {
    * Establishes a Mongoose connection.
    */
   public async connect(): Promise<mongoose.Connection | null> {
-    if (this.connection && this.connection.readyState === mongoose.ConnectionStates.connected) {
+    if (this.connection && this.connection.readyState === mongoose.ConnectionStates?.connected) {
       console.log('Mongoose is already connected.');
       return this.connection;
     }
@@ -53,13 +49,6 @@ class MongoDBClient {
         console.log('Mongoose connected successfully.');
       });
 
-      this.connection.once('open', () => {
-        // Initialize the GridFS stream
-        gfs = Grid(this.connection.db, mongoose.mongo);
-        gfs.collection('fs');
-        console.log('MongoDB Connected & GridFS Initialized');
-      });
-
       this.connection.on('error', err => {
         console.error('Mongoose connection error:', err);
       });
@@ -75,6 +64,13 @@ class MongoDBClient {
     }
   }
 
+  public initGridFSBucket(connection: mongoose.Connection) {
+    const db = connection.db;
+    const bucket = new mongoose.mongo.GridFSBucket(db, { bucketName: 'quikdb' });
+    console.log('GridFS Bucket Initialized');
+    return bucket;
+  }
+
   /**
    * Closes the MongoDB and Mongoose connections.
    */
@@ -86,4 +82,4 @@ class MongoDBClient {
   }
 }
 
-export { MongoDBClient, mongoose, plugin };
+export { MongoDBClient, mongoose };

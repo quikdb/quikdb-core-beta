@@ -55,6 +55,8 @@ export const GetIdInRequestMiddleware = async (req: Request, res: Response, next
 
     const requestObject = JSON.parse(decryptedRequest);
 
+    console.log({ idInRequest: requestObject });
+
     res.locals.validatedIdRequest = requestObject;
 
     next();

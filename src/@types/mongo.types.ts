@@ -1,3 +1,4 @@
+import { mongoose } from '@/config';
 import { ClientSession, PopulateOptions, FlattenMaps, Require_id, Schema, Document } from '../services';
 
 export enum ClientNames {
@@ -25,3 +26,11 @@ export interface IMongoServiceConfig<T extends Document> {
   modelName: string;
   schema: Schema<T>;
 }
+
+export type GridFSFile = {
+  _id: mongoose.Types.ObjectId;
+  filename: string;
+  contentType: string;
+  metadata: any;
+  length: number;
+};

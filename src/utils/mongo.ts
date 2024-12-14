@@ -1,11 +1,11 @@
-import { MongoDBClient } from '@/config';
+import { MongoDBClient, mongoose } from '@/config';
 
 /**
  * Function for mongo tools methods
  * @function MongoTools
  */
 export class MongoTools {
-  static async InitMongo() {
+  static async InitMongo(): Promise<mongoose.mongo.GridFSBucket> {
     const client = await MongoDBClient.getInstance();
     if (!client) {
       console.error('Failed to get MongoDBClient instance');
@@ -17,6 +17,8 @@ export class MongoTools {
       console.error('Failed to connect to MongoDB');
       return;
     }
+
+    return client.initGridFSBucket(connection);
   }
 
   static BuildQuery<T extends object>(excludedKeys: (keyof T)[], requestBody: T): Partial<T> {

@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { ProjectDocument, ProjectModel, TokenDocument, TokenModel } from '@/services/mongodb';
 import { LogAction, LogStatus, LogUsers, StatusCode, Token } from '@/@types';
-import { CryptoUtils, Utils } from '@/utils';
+import * as fs from 'fs';
+import * as path from 'path';
+import { CryptoUtils, MongoTools, Utils } from '@/utils';
 import { Model } from '@/services';
 import { BaseController } from './00_base.controller';
 import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER } from '@/config';
@@ -849,6 +851,301 @@ class ProjectController extends BaseController {
           message: JSON.stringify(error),
           status: LogStatus.FAIL,
           serviceLog: ProjectModel,
+          options: {},
+        },
+      );
+    } finally {
+      session?.endSession();
+    }
+  }
+
+  /**
+   * Handles the Project code upload process.
+   * @param req - Express request object containing the Project sign-up data.
+   * @param res - Express response object to send the response.
+   */
+  async UploadProjectCode(req: Request, res: Response) {
+    const session = null;
+    const currentUser = res.locals.currentUser;
+    try {
+      /************ Extract validated fetch project data ************/
+      const validatedIdRequest = res.locals.validatedIdRequest;
+      const { id } = validatedIdRequest;
+
+      if (!Utils.isObjectId(id)) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'not a valid id.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Find Project by email or phone number ************/
+      const project = await ProjectController.projectService.findOneMongo(
+        {
+          _id: id,
+          owner: currentUser._id,
+        },
+        {},
+        { session },
+      );
+
+      /************ Handle invalid credentials ************/
+      if (!project.status || project.data.owner.toString() !== currentUser._id.toString()) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'invalid credentials.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ No file created ************/
+      if (!req.file) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'file upload failed.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Commit the transaction and send a successful response ************/
+      await session?.commitTransaction();
+      session?.endSession();
+
+      const fileName = req.file.originalname;
+      const filePath = path.join(__dirname, '../temp', req.file.filename);
+
+      // Ensure the file exists before proceeding
+      if (!fs.existsSync(filePath)) {
+        console.error(`File not found: ${filePath}`);
+
+        Utils.apiResponse<TokenDocument>(
+          res,
+          StatusCode.INTERNAL_SERVER_ERROR,
+          {},
+          {
+            user: LogUsers.PROJECT,
+            action: LogAction.UPLOAD_PROJECT_CODE,
+            message: 'file not found after upload.',
+            status: LogStatus.SUCCESS,
+            serviceLog: TokenModel,
+            options: {
+              email: '',
+            },
+          },
+        );
+      }
+      const readStream = fs.createReadStream(filePath);
+
+      const bucket = await MongoTools.InitMongo();
+
+      const writeStream = bucket.openUploadStream(fileName, {
+        chunkSizeBytes: 1048576, // Chunk size of 1MB
+        metadata: { fileType: req.file.mimetype }, // Set metadata (e.g., mimetype)
+      });
+
+      readStream.pipe(writeStream);
+
+      writeStream.on('finish', () => {
+        fs.unlinkSync(filePath);
+        Utils.apiResponse<TokenDocument>(
+          res,
+          StatusCode.OK,
+          {
+            file: {
+              filename: fileName,
+              contentType: req.file.mimetype,
+            },
+          },
+          {
+            user: LogUsers.PROJECT,
+            action: LogAction.UPLOAD_PROJECT_CODE,
+            message: 'file upload success.',
+            status: LogStatus.SUCCESS,
+            serviceLog: TokenModel,
+            options: {
+              email: '',
+            },
+          },
+        );
+      });
+
+      writeStream.on('error', err => {
+        console.error('Error uploading file to GridFS:', err);
+        Utils.apiResponse<TokenDocument>(
+          res,
+          StatusCode.INTERNAL_SERVER_ERROR,
+          {},
+          {
+            user: LogUsers.PROJECT,
+            action: LogAction.UPLOAD_PROJECT_CODE,
+            message: 'Error uploading file to GridFS',
+            status: LogStatus.SUCCESS,
+            serviceLog: TokenModel,
+            options: {
+              email: '',
+            },
+          },
+        );
+      });
+    } catch (error) {
+      console.log(error);
+      !session.transaction.isActive && (await session.abortTransaction());
+      session?.endSession();
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<TokenDocument>(
+        res,
+        StatusCode.INTERNAL_SERVER_ERROR,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.PROJECT,
+          action: LogAction.CREATE_PROJECT,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: TokenModel,
+          options: {},
+        },
+      );
+    } finally {
+      session?.endSession();
+    }
+  }
+
+  /**
+   * Handles the Project code upload process.
+   * @param req - Express request object containing the Project sign-up data.
+   * @param res - Express response object to send the response.
+   */
+  async DownloadProjectCode(req: Request, res: Response) {
+    const session = null;
+    const currentUser = res.locals.currentUser;
+    try {
+      /************ Extract validated fetch project data ************/
+      const validatedIdRequest = res.locals.validatedIdRequest;
+      const { id } = validatedIdRequest;
+
+      if (!Utils.isObjectId(id)) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'not a valid id.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Find Project by email or phone number ************/
+      const project = await ProjectController.projectService.findOneMongo(
+        {
+          _id: id,
+          owner: currentUser._id,
+        },
+        {},
+        { session },
+      );
+
+      /************ Handle invalid credentials ************/
+      if (!project.status || project.data.owner.toString() !== currentUser._id.toString()) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'invalid credentials.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Commit the transaction and send a successful response ************/
+      await session?.commitTransaction();
+      session?.endSession();
+
+      const bucket = await MongoTools.InitMongo();
+
+      const file = bucket.openDownloadStreamByName('dist.zip');
+
+      console.log({ file });
+
+      file.on('error', err => {
+        console.log('error downloading file', err);
+        Utils.apiResponse<TokenDocument>(
+          res,
+          StatusCode.NOT_FOUND,
+          {},
+          {
+            user: LogUsers.PROJECT,
+            action: LogAction.UPLOAD_PROJECT_CODE,
+            message: 'File not found.',
+            status: LogStatus.SUCCESS,
+            serviceLog: TokenModel,
+            options: {
+              email: '',
+            },
+          },
+        );
+      });
+
+      file.pipe(res);
+
+      file.on('finish', () => {
+        Utils.apiResponse<TokenDocument>(
+          res,
+          StatusCode.OK,
+          {},
+          {
+            user: LogUsers.PROJECT,
+            action: LogAction.UPLOAD_PROJECT_CODE,
+            message: 'download success.',
+            status: LogStatus.SUCCESS,
+            serviceLog: TokenModel,
+            options: {
+              email: '',
+            },
+          },
+        );
+      });
+    } catch (error) {
+      console.log(error);
+      !session.transaction.isActive && (await session.abortTransaction());
+      session?.endSession();
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<TokenDocument>(
+        res,
+        StatusCode.INTERNAL_SERVER_ERROR,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.PROJECT,
+          action: LogAction.CREATE_PROJECT,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: TokenModel,
           options: {},
         },
       );
