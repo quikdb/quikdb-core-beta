@@ -7,7 +7,6 @@ import {
   NODEMAILER_EMAIL,
   NODEMAILER_PASSWORD,
   NODEMAILER_NAME,
-  logger,
 } from '../config';
 
 const config = {
@@ -31,10 +30,10 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
       subject,
       html,
     });
-    // logger('info', `Message sent: ${info.messageId}`);
-    return info;
+    console.info('info', `Message sent: ${info.messageId}`);
+    return true;
   } catch (error) {
     console.log(error);
-    return error;
+    return false;
   }
 };

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { UserDocument, UserModel } from '@/services/mongodb';
 import { LogAction, LogStatus, LogUsers, StatusCode, OtpRequestType } from '@/@types';
-import { CryptoUtils, Utils } from '@/utils';
+import { CryptoUtils, sendEmail, Utils } from '@/utils';
 import { Model } from '@/services';
 import { BaseController } from './00_base.controller';
 import { AddToBlacklist } from '@/utils';
@@ -88,6 +88,61 @@ class AuthController extends BaseController {
       /************ Commit the transaction and send a successful response ************/
       await session?.commitTransaction();
       session?.endSession();
+
+      /***** send otp email ******/
+      await sendEmail(
+        email,
+        'One Time Password',
+        `
+    <html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+          }
+          .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          }
+          h1 {
+            color: #333;
+            text-align: center;
+            font-size: 24px;
+          }
+          .content {
+            font-size: 16px;
+            color: #555;
+            text-align: center;
+          }
+          .otp {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #007bff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>One Time Password</h1>
+          <p class="content">Your one-time password (OTP) has arrived:</p>
+          <div class="otp">${otp}</div>
+        </div>
+      </body>
+    </html>
+  `,
+      );
 
       return Utils.apiResponse<UserDocument>(
         res,
@@ -487,7 +542,58 @@ class AuthController extends BaseController {
 
       const accessToken = Utils.createToken(payload, '1d');
 
-      // send sign in notification.
+      /***** send sign-in notification email ******/
+      await sendEmail(
+        email,
+        'You signed in',
+        `
+    <html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+          }
+          .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          }
+          h1 {
+            color: #333;
+            text-align: center;
+            font-size: 24px;
+          }
+          .content {
+            font-size: 16px;
+            color: #555;
+            text-align: center;
+          }
+          .timestamp {
+            font-size: 14px;
+            color: #888;
+            text-align: center;
+            margin-top: 10px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Did you just sign in?</h1>
+          <p class="content">We noticed a sign-in attempt to your account.</p>
+          <p class="content">If this was you, no further action is needed.</p>
+          <p class="timestamp">Signed in at: ${new Date().toLocaleString()}</p>
+        </div>
+      </body>
+    </html>
+  `,
+      );
 
       /************ Commit the transaction and send a successful response ************/
       await session?.commitTransaction();
@@ -670,7 +776,58 @@ class AuthController extends BaseController {
       /************ Generate access token ************/
       const accessToken = Utils.createToken(payload);
 
-      // send sign in notification.
+      /***** send sign-in notification email ******/
+      await sendEmail(
+        email,
+        'You signed in',
+        `
+    <html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+          }
+          .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          }
+          h1 {
+            color: #333;
+            text-align: center;
+            font-size: 24px;
+          }
+          .content {
+            font-size: 16px;
+            color: #555;
+            text-align: center;
+          }
+          .timestamp {
+            font-size: 14px;
+            color: #888;
+            text-align: center;
+            margin-top: 10px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Did you just sign in?</h1>
+          <p class="content">We noticed a sign-in attempt to your account.</p>
+          <p class="content">If this was you, no further action is needed.</p>
+          <p class="timestamp">Signed in at: ${new Date().toLocaleString()}</p>
+        </div>
+      </body>
+    </html>
+  `,
+      );
 
       /************ Commit the transaction and send a successful response ************/
       await session?.commitTransaction();
@@ -838,7 +995,58 @@ class AuthController extends BaseController {
       /************ Generate access token ************/
       const accessToken = Utils.createToken(payload);
 
-      // send cli sign in notification and activate the token with the request.
+      /***** send cli sign in notification and activate the token with the request. ******/
+      await sendEmail(
+        email,
+        'You signed in',
+        `
+    <html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+          }
+          .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          }
+          h1 {
+            color: #333;
+            text-align: center;
+            font-size: 24px;
+          }
+          .content {
+            font-size: 16px;
+            color: #555;
+            text-align: center;
+          }
+          .timestamp {
+            font-size: 14px;
+            color: #888;
+            text-align: center;
+            margin-top: 10px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Did you just sign in?</h1>
+          <p class="content">We noticed a sign-in attempt to your account.</p>
+          <p class="content">If this was you, no further action is needed.</p>
+          <p class="timestamp">Signed in at: ${new Date().toLocaleString()}</p>
+        </div>
+      </body>
+    </html>
+  `,
+      );
 
       /************ Commit the transaction and send a successful response ************/
       await session?.commitTransaction();
