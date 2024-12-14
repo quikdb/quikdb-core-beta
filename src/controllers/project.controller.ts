@@ -930,8 +930,7 @@ class ProjectController extends BaseController {
       await session?.commitTransaction();
       session?.endSession();
 
-      const fileName = req.file.originalname;
-      const filePath = path.join(__dirname, '../temp', req.file.filename);
+      const filePath = path.join(__dirname, '../temp', id);
 
       // Ensure the file exists before proceeding
       if (!fs.existsSync(filePath)) {
@@ -957,7 +956,7 @@ class ProjectController extends BaseController {
 
       const bucket = await MongoTools.InitMongo();
 
-      const writeStream = bucket.openUploadStream(fileName, {
+      const writeStream = bucket.openUploadStream(id, {
         chunkSizeBytes: 1048576, // Chunk size of 1MB
         metadata: { fileType: req.file.mimetype }, // Set metadata (e.g., mimetype)
       });
@@ -971,7 +970,7 @@ class ProjectController extends BaseController {
           StatusCode.OK,
           {
             file: {
-              filename: fileName,
+              filename: id,
               contentType: req.file.mimetype,
             },
           },
@@ -1088,7 +1087,7 @@ class ProjectController extends BaseController {
 
       const bucket = await MongoTools.InitMongo();
 
-      const file = bucket.openDownloadStreamByName('dist.zip');
+      const file = bucket.openDownloadStreamByName(id);
 
       console.log({ file });
 
