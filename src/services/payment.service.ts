@@ -3,12 +3,14 @@ import { ApiError as PaystackApiError, CheckoutPaymentIntent, Client, Environmen
 import axios from 'axios';
 import { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_URL } from '@/config';
 import { ApiError } from '@/utils';
+import { PaymentMongoService } from './mongo.service';
 
 const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   apiVersion: '2024-11-20.acacia',
 });
 
 export class PaymentService {
+  public static mongo = PaymentMongoService;
   private static paypalConfig = {
     clientCredentialsAuthCredentials: {
       oAuthClientId: PAYPAL_CLIENT_ID,

@@ -4,7 +4,7 @@ export type UserType = {
   password: string;
   principalId: string;
   canisterId: string;
-  cyclesBalance: number;
+  credits: number;
   googleId: string;
   canisterDetails: CanisterDetails[];
 };

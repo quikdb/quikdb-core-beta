@@ -1,7 +1,7 @@
 import { DatabaseVersion, LogAction, LogStatus, StatusCode } from '@/@types';
 import { NODE_ENV, API_BASE_URL } from '@/config';
 import request from 'supertest';
-import { tokenForSamson } from '../constants.test';
+import { projectId, tokenForSamson } from '../constants.test';
 
 const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';
 const token = tokenForSamson;
@@ -12,6 +12,7 @@ describe('Integration Test: Payment Module', () => {
       const data = {
         amount: 10,
         databaseVersion: DatabaseVersion.PREMIUM,
+        projectId,
       };
 
       const response = await request(BASE_URL)
@@ -21,7 +22,7 @@ describe('Integration Test: Payment Module', () => {
           ...data,
         });
 
-      console.log('Test Response:', response.body);
+      console.log('Test Response:', JSON.stringify(response.body));
 
       expect(response.body).toMatchObject({
         status: LogStatus.SUCCESS,

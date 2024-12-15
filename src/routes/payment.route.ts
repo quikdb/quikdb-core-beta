@@ -19,6 +19,6 @@ export class PaymentRoute implements Routes {
 
   private initializeRoutes() {
     this.router.post(`${this.path}`, CreatePaypalOrderMiddleware, PaymentController.CreatePaypalOrder);
-    this.router.get(`${this.path}/:OrderID`, CapturePaypalOrderMiddleware, PaymentController.CapturePaypalOrder);
+    this.router.get(`${this.path}/:order`, CapturePaypalOrderMiddleware, PaymentController.CapturePaypalOrder);
   }
 }

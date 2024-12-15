@@ -8,7 +8,7 @@ const CanisterDetailsSchema = new mongoose.Schema({
   type: { type: String, enum: Object.values(DatabaseVersion), required: true },
   url: { type: String, required: true },
   owner: { type: String, required: true },
-  canisterId: { type: String, required: true },
+  canisterId: { type: String, unique: true, sparse: true },
   status: { type: String, required: true, default: false },
   controllers: { type: [String], required: true },
 });
@@ -19,8 +19,7 @@ const UserSchema: mongoose.Schema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     principalId: { type: String, unique: true, sparse: true },
-    canisterId: { type: String, unique: true, sparse: true },
-    cyclesBalance: { type: Number, default: 0 },
+    credits: { type: Number, default: 0 },
     googleId: { type: String, unique: true, sparse: true },
     deleted: { type: Boolean, required: true, default: false },
     canisterDetails: { type: [CanisterDetailsSchema], default: [] },

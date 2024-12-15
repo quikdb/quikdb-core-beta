@@ -31,5 +31,7 @@ export const ValidateEnv = () => {
     PAYPAL_CLIENT_SECRET: str(),
     STRIPE_URL: str(),
     STRIPE_SECRET_KEY: str(),
+    PREMIUM_PRICE: str(),
+    PROFESSIONAL_PRICE: str(),
   });
 };
