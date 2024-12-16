@@ -221,7 +221,7 @@ export const CheckTokenMiddleware = async (req: Request, res: Response, next: Ne
 
     const user = await userService.findOneMongo(
       {
-        email: payload.email,
+        $or: [{ email: payload?.email }, { principalId: payload?.principalId }],
         deleted: false,
       },
       {},

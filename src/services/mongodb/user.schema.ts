@@ -16,8 +16,8 @@ const CanisterDetailsSchema = new mongoose.Schema({
 const UserSchema: mongoose.Schema = new mongoose.Schema(
   {
     username: { type: String, sparse: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    email: { type: String, unique: true, sparse: true },
+    password: { type: String },
     principalId: { type: String, unique: true, sparse: true },
     credits: { type: Number, default: 0 },
     googleId: { type: String, unique: true, sparse: true },

@@ -1,4 +1,4 @@
-import { LogAction, LogStatus, StatusCode } from '@/@types';
+import { LogAction, LogStatus, StatusCode, OtpRequestType } from '@/@types';
 import { NODE_ENV, API_BASE_URL, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER } from '@/config';
 import { CryptoUtils } from '@/utils';
 import request from 'supertest';
@@ -12,7 +12,7 @@ describe('Integration Test: Auth Module', () => {
     it('should send one time password', async () => {
       const data = JSON.stringify({
         email: testEmail,
-        OTPType: 'password',
+        OTPType: OtpRequestType.LINK,
       });
 
       const encryptedData = CryptoUtils.aesEncrypt(data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);

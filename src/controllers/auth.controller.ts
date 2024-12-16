@@ -5,7 +5,7 @@ import { CryptoUtils, sendEmail, Utils } from '@/utils';
 import { Model } from '@/services';
 import { BaseController } from './00_base.controller';
 import { AddToBlacklist } from '@/utils';
-import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER, NODE_ENV } from '@/config';
+import { API_BASE_URL, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER, FE_BASE_URL, NODE_ENV } from '@/config';
 
 /**
  * AuthController handles the sign-in process for users.
@@ -37,7 +37,7 @@ class AuthController extends BaseController {
         { session, hiddenFields: ['password'] },
       );
 
-      if ((OTPType as OtpRequestType) === OtpRequestType.PASSWORD) {
+      if ((OTPType as OtpRequestType) === OtpRequestType.PASSWORD || (OTPType as OtpRequestType) === OtpRequestType.LINK) {
         if (!user.status) {
           return AuthController.abortTransactionWithResponse(
             res,
@@ -51,7 +51,9 @@ class AuthController extends BaseController {
             },
           );
         }
-      } else {
+      }
+
+      if ((OTPType as OtpRequestType) === OtpRequestType.SIGNUP) {
         if (user.status) {
           return AuthController.abortTransactionWithResponse(
             res,
@@ -89,10 +91,107 @@ class AuthController extends BaseController {
       await session?.commitTransaction();
       session?.endSession();
 
+      if ((OTPType as OtpRequestType) === OtpRequestType.LINK) {
+        const data = JSON.stringify({
+          otp,
+          timestamp: Date.now(),
+        });
+
+        const encryptedData = CryptoUtils.aesEncrypt(data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+        console.log({ encryptedData });
+
+        const link = `${FE_BASE_URL}/a/one-time-link/${encryptedData}`;
+
+        /***** send one-time link ******/
+        await sendEmail(
+          email,
+          'One Time Link Request',
+          `
+    <html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+          }
+          .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          }
+          h1 {
+            color: #333;
+            text-align: center;
+            font-size: 24px;
+          }
+          .content {
+            font-size: 16px;
+            color: #555;
+            text-align: center;
+            margin-top: 20px;
+          }
+          .link-container {
+            text-align: center;
+            margin-top: 30px;
+          }
+          .link {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffffff;
+            background-color: #007bff;
+            padding: 12px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            display: inline-block;
+          }
+          .link:hover {
+            background-color: #0056b3;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>One Time Link Request</h1>
+          <p class="content">You requested a one-time link to complete your action.</p>
+          <p class="content">Please click the button below to proceed:</p>
+          <div class="link-container">
+            <a href="${link}" class="link">Access Your Link</a>
+          </div>
+          <p class="content">This link will expire shortly. If you did not request this, please ignore this email.</p>
+        </div>
+      </body>
+    </html>
+  `,
+        );
+
+        return Utils.apiResponse<UserDocument>(
+          res,
+          StatusCode.OK,
+          { link },
+          {
+            user: LogUsers.AUTH,
+            action: LogAction.SEND,
+            message: 'otp sent.',
+            status: LogStatus.SUCCESS,
+            serviceLog: UserModel,
+            options: {
+              email,
+            },
+          },
+        );
+      }
+
       /***** send otp email ******/
       await sendEmail(
         email,
-        'One Time Password',
+        'OTP Request.',
         `
     <html>
       <head>
@@ -612,7 +711,7 @@ class AuthController extends BaseController {
   }
 
   /**
-   * Signs out a user.
+   * Generates oauth url.
    * @param req - Express request object containing the user sign-up data.
    * @param res - Express response object to send the response.
    */
@@ -857,8 +956,6 @@ class AuthController extends BaseController {
 
       const { email, password, principalId, username, projectTokenRef } = validatedSignInWCliRequestBody;
 
-      console.log({ validatedSignInWCliRequestBody });
-
       /************ Find user by email or phone number ************/
       const auth = await AuthController.userService.findOneMongo(
         {
@@ -886,7 +983,7 @@ class AuthController extends BaseController {
 
       /************ Validate password ************/
       const valid = Utils.comparePasswords(password, auth.data.password);
-      console.log({ valid });
+
       if (!valid) {
         return AuthController.abortTransactionWithResponse(
           res,
@@ -947,11 +1044,7 @@ class AuthController extends BaseController {
 
       const decryptedToken = CryptoUtils.aesDecrypt(projectTokenRef, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
 
-      console.log({ decryptedToken });
-
       const tokenPayload = Utils.verifyToken(decryptedToken);
-
-      console.log({ tokenPayload });
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { iat, exp, ...rest } = tokenPayload as any;
@@ -1064,6 +1157,92 @@ class AuthController extends BaseController {
   }
 
   /**
+   * Handles the user signin process using email and pw.
+   * @param req - Express request object containing the user sign-up data.
+   * @param res - Express response object to send the response.
+   */
+  async SigninWithInternetIdentity(req: Request, res: Response) {
+    const session = null;
+    try {
+      /************ Extract validated sign-in data ************/
+      const validatedSigninWithEPRequestBody = res.locals.validatedSigninWithEPRequestBody;
+      const { principalId } = validatedSigninWithEPRequestBody;
+
+      const user = await AuthController.userService.updateOneMongo(
+        {
+          principalId,
+        },
+        {},
+        { session },
+      );
+
+      if (!user.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'signin failed',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Generate access token ************/
+      const payload = {
+        principalId,
+      };
+
+      const accessToken = Utils.createToken(payload, '1d');
+
+      /************ Commit the transaction and send a successful response ************/
+      await session?.commitTransaction();
+      session?.endSession();
+
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.OK,
+        {
+          accessToken,
+        },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.SIGNIN,
+          message: 'signin success.',
+          status: LogStatus.SUCCESS,
+          serviceLog: UserModel,
+          options: {
+            email: '',
+          },
+        },
+      );
+    } catch (error) {
+      console.log(error);
+      !session.transaction.isActive && (await session.abortTransaction());
+      session?.endSession();
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.UNAUTHORIZED,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.SIGNUP,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: UserModel,
+          options: {},
+        },
+      );
+    } finally {
+      session?.endSession();
+    }
+  }
+
+  /**
    * update user password.
    * @param req - Express request object containing the user sign-up data.
    * @param res - Express response object to send the response.
@@ -1071,7 +1250,6 @@ class AuthController extends BaseController {
   async ForgotPassword(req: Request, res: Response) {
     const session = null;
     try {
-      console.log({ currentUser: res.locals.currentUser });
       const currentUser = res.locals.currentUser;
 
       /************ Extract validated sign-in data ************/
@@ -1079,14 +1257,12 @@ class AuthController extends BaseController {
 
       const { password } = validatedForgotPasswordRequestBody;
 
-      console.log({ validatedForgotPasswordRequestBody });
-
       /************ encrypt password ************/
       const hashedPw = Utils.encryptPassword(password);
 
       const user = await AuthController.userService.updateOneMongo(
         {
-          email: currentUser.email,
+          email: currentUser?.email,
         },
         { password: hashedPw },
         { session },
@@ -1146,7 +1322,6 @@ class AuthController extends BaseController {
    */
   async Signout(req: Request, res: Response) {
     try {
-      console.log({ currentUser: res.locals.currentUser });
       res.locals.currentUser = null;
       const token = Utils.checkToken(req);
 

@@ -44,4 +44,5 @@ export const {
   GOOGLE_REDIRECT_URI,
   PREMIUM_PRICE,
   PROFESSIONAL_PRICE,
+  FE_BASE_URL,
 } = process.env;
