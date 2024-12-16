@@ -1,4 +1,4 @@
-import { LogAction, LogStatus, StatusCode } from '@/@types';
+import { LogAction, LogStatus, OtpRequestType, StatusCode } from '@/@types';
 import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER, NODE_ENV, API_BASE_URL } from '@/config';
 import { CryptoUtils } from '@/utils';
 import request from 'supertest';
@@ -13,7 +13,7 @@ describe('Integration Test: Auth Module', () => {
     it('should verify the one time password', async () => {
       const data = JSON.stringify({
         email: testEmail,
-        OTPType: 'password',
+        OTPType: OtpRequestType.PASSWORD,
         otp: '123456',
       });
 
@@ -22,7 +22,7 @@ describe('Integration Test: Auth Module', () => {
       console.log({ encryptedData });
 
       const response = await request(BASE_URL).post('/a/verifyOtp').send({
-        data: encryptedData,
+        data: 'e122845edfb70f510c82b08ef2e806e54d96d0f170dfaa5be1321003878b316b673c811ad7b2e511c01d81c3f4ab17aa26152dc1a6d5976e4fcc88b70a162eda174f506af7b67e09662206019a378e81cc9ce9b36068e6492d7e6e92f9bf4938',
       });
 
       console.log('Test Response:', response.body);

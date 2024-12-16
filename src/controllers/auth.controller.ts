@@ -94,6 +94,8 @@ class AuthController extends BaseController {
       if ((OTPType as OtpRequestType) === OtpRequestType.LINK) {
         const data = JSON.stringify({
           otp,
+          OTPType,
+          email,
           timestamp: Date.now(),
         });
 
@@ -165,6 +167,7 @@ class AuthController extends BaseController {
             <a href="${link}" class="link">Access Your Link</a>
           </div>
           <p class="content">This link will expire shortly. If you did not request this, please ignore this email.</p>
+          <p class="content">Here is the link again: ${link}</p>
         </div>
       </body>
     </html>
@@ -321,7 +324,7 @@ class AuthController extends BaseController {
       }
 
       let token: string;
-      if ((OTPType as OtpRequestType) === OtpRequestType.PASSWORD) {
+      if ((OTPType as OtpRequestType) === OtpRequestType.PASSWORD || (OTPType as OtpRequestType) === OtpRequestType.LINK) {
         token = Utils.createToken({
           email,
           otp,
