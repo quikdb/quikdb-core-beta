@@ -33,5 +33,6 @@ export const ValidateEnv = () => {
     STRIPE_SECRET_KEY: str(),
     PREMIUM_PRICE: str(),
     PROFESSIONAL_PRICE: str(),
+    FE_BASE_URL: str(),
   });
 };

@@ -200,6 +200,28 @@ export const ForgotPasswordMiddleware = async (req: Request, res: Response, next
   }
 };
 
+export const SigninWithInternetIdentityMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
+
+    console.log({ value });
+
+    if (error) {
+      next(new ApiError(error, 'SigninWithInternetIdentityMiddleware', StatusCode.UNAUTHORIZED));
+    }
+
+    const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+    const requestObject = JSON.parse(decryptedRequest);
+
+    res.locals.validatedSigninWithIIRequestBody = requestObject;
+
+    next();
+  } catch (error) {
+    next(new ApiError(error.message || error, 'SigninWithInternetIdentityMiddleware', StatusCode.UNAUTHORIZED));
+  }
+};
+
 export const CheckTokenMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userService = new MongoApiService<UserDocument>(UserModel);

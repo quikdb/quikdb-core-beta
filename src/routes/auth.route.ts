@@ -13,6 +13,7 @@ import {
   SigninWithGoogleMiddleware,
   SigninWithCliMiddleware,
   ForgotPasswordMiddleware,
+  SigninWithInternetIdentityMiddleware,
 } from '@/middlewares';
 
 /** Import interfaces */
@@ -34,6 +35,7 @@ export class AuthRoute implements Routes {
     this.router.post(`${this.path}/signupWithEP`, SignupWithEPMiddleware, AuthController.SignupWithEmailAndPassword);
     this.router.post(`${this.path}/signinWithEP`, SigninWithEPMiddleware, AuthController.SigninWithEmailAndPassword);
     this.router.post(`${this.path}/signinWithCli`, SigninWithCliMiddleware, AuthController.SigninWithCli);
+    this.router.post(`${this.path}/signinWithII`, SigninWithInternetIdentityMiddleware, AuthController.SigninWithInternetIdentity);
     this.router.get(`${this.path}/signout`, CheckTokenMiddleware, AuthController.Signout);
     this.router.post(`${this.path}/forgotPassword`, [CheckTokenMiddleware, ForgotPasswordMiddleware], AuthController.ForgotPassword);
   }

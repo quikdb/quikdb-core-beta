@@ -5,7 +5,7 @@ import { CryptoUtils, sendEmail, Utils } from '@/utils';
 import { Model } from '@/services';
 import { BaseController } from './00_base.controller';
 import { AddToBlacklist } from '@/utils';
-import { API_BASE_URL, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER, FE_BASE_URL, NODE_ENV } from '@/config';
+import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER, FE_BASE_URL, NODE_ENV } from '@/config';
 
 /**
  * AuthController handles the sign-in process for users.
@@ -101,7 +101,7 @@ class AuthController extends BaseController {
 
         console.log({ encryptedData });
 
-        const link = `${FE_BASE_URL}/a/one-time-link/${encryptedData}`;
+        const link = `${FE_BASE_URL}/one-time-link/${encryptedData}`;
 
         /***** send one-time link ******/
         await sendEmail(
@@ -1165,8 +1165,8 @@ class AuthController extends BaseController {
     const session = null;
     try {
       /************ Extract validated sign-in data ************/
-      const validatedSigninWithEPRequestBody = res.locals.validatedSigninWithEPRequestBody;
-      const { principalId } = validatedSigninWithEPRequestBody;
+      const validatedSigninWithIIRequestBody = res.locals.validatedSigninWithIIRequestBody;
+      const { principalId } = validatedSigninWithIIRequestBody;
 
       const user = await AuthController.userService.updateOneMongo(
         {
