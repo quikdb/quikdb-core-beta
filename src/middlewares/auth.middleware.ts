@@ -4,7 +4,7 @@ import { Utils, ApiError, CryptoUtils } from '@/utils';
 import { UserDocument, UserModel } from '@/services/mongodb';
 import { MongoApiService } from '@/services';
 import { IsTokenBlacklisted } from '@/utils';
-import { StatusCode, LogUsers, LogAction, LogStatus, GenericAnyType } from '@/@types';
+import { StatusCode, LogUsers, LogAction, LogStatus } from '@/@types';
 import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER } from '@/config';
 
 export const AuthenticationMiddleware = async (req: Request, res: Response, next: NextFunction) => {
@@ -46,7 +46,7 @@ export const AuthenticationMiddleware = async (req: Request, res: Response, next
 
     res.locals.tokenData = tokenData;
     next();
-  } catch (error: GenericAnyType) {
+  } catch (error) {
     return Utils.apiResponse<UserDocument>(
       res,
       StatusCode.INTERNAL_SERVER_ERROR,
@@ -175,6 +175,28 @@ export const SigninWithCliMiddleware = async (req: Request, res: Response, next:
     next();
   } catch (error) {
     next(new ApiError(error.message || error, 'SigninWithCliMiddleware', StatusCode.UNAUTHORIZED));
+  }
+};
+
+export const ForgotPasswordMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
+
+    console.log({ value });
+
+    if (error) {
+      next(new ApiError(error, 'ForgotPasswordMiddleware', StatusCode.UNAUTHORIZED));
+    }
+
+    const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+    const requestObject = JSON.parse(decryptedRequest);
+
+    res.locals.validatedForgotPasswordRequestBody = requestObject;
+
+    next();
+  } catch (error) {
+    next(new ApiError(error.message || error, 'ForgotPasswordMiddleware', StatusCode.UNAUTHORIZED));
   }
 };
 

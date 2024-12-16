@@ -69,7 +69,7 @@ class AuthController extends BaseController {
 
       const otp = NODE_ENV !== 'production' ? '123456' : Utils.generateOtp();
 
-      const createdOtp = await AuthController.otpService.updateOneMongo({ email }, { otp: `${email}-${otp}` }, { session });
+      const createdOtp = await AuthController.otpService.updateOneMongo({ email }, { otp: `${email}-${otp}`, isValid: true }, { session });
 
       if (!createdOtp.status) {
         return AuthController.abortTransactionWithResponse(
@@ -201,7 +201,7 @@ class AuthController extends BaseController {
         {
           email,
           otp: `${email}-${otp}`,
-          isValid: false,
+          isValid: true,
         },
         {},
         { session },
@@ -221,22 +221,9 @@ class AuthController extends BaseController {
         );
       }
 
+      let token: string;
       if ((OTPType as OtpRequestType) === OtpRequestType.PASSWORD) {
-        if (!otpData.status) {
-          return AuthController.abortTransactionWithResponse(
-            res,
-            StatusCode.BAD_REQUEST,
-            session,
-            'invalid request.',
-            LogStatus.FAIL,
-            ...AuthController.staticsInResponse,
-            {
-              email: '',
-            },
-          );
-        }
-
-        const token = Utils.createToken({
+        token = Utils.createToken({
           email,
           otp,
         });
@@ -264,28 +251,9 @@ class AuthController extends BaseController {
             },
           );
         }
-
-        return Utils.apiResponse<UserDocument>(
-          res,
-          StatusCode.OK,
-          {
-            token,
-            user: user.data,
-          },
-          {
-            user: LogUsers.AUTH,
-            action: LogAction.VERIFY_OTP,
-            message: 'password otp verified.',
-            status: LogStatus.SUCCESS,
-            serviceLog: UserModel,
-            options: {
-              email,
-            },
-          },
-        );
       }
 
-      const updatedOtpData = await AuthController.otpService.updateOneMongo({ email }, { isValid: true }, { session });
+      const updatedOtpData = await AuthController.otpService.updateOneMongo({ email }, { isValid: false }, { session });
 
       if (!updatedOtpData.status) {
         return AuthController.abortTransactionWithResponse(
@@ -308,11 +276,13 @@ class AuthController extends BaseController {
       return Utils.apiResponse<UserDocument>(
         res,
         StatusCode.OK,
-        {},
+        {
+          token,
+        },
         {
           user: LogUsers.AUTH,
           action: LogAction.VERIFY_OTP,
-          message: 'email otp verified.',
+          message: 'otp verified.',
           status: LogStatus.SUCCESS,
           serviceLog: UserModel,
           options: {
@@ -1090,6 +1060,82 @@ class AuthController extends BaseController {
       );
     } finally {
       session?.endSession();
+    }
+  }
+
+  /**
+   * update user password.
+   * @param req - Express request object containing the user sign-up data.
+   * @param res - Express response object to send the response.
+   */
+  async ForgotPassword(req: Request, res: Response) {
+    const session = null;
+    try {
+      console.log({ currentUser: res.locals.currentUser });
+      const currentUser = res.locals.currentUser;
+
+      /************ Extract validated sign-in data ************/
+      const validatedForgotPasswordRequestBody = res.locals.validatedForgotPasswordRequestBody;
+
+      const { password } = validatedForgotPasswordRequestBody;
+
+      console.log({ validatedForgotPasswordRequestBody });
+
+      /************ encrypt password ************/
+      const hashedPw = Utils.encryptPassword(password);
+
+      const user = await AuthController.userService.updateOneMongo(
+        {
+          email: currentUser.email,
+        },
+        { password: hashedPw },
+        { session },
+      );
+
+      if (!user.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'invalid credentials',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.OK,
+        {},
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.FORGOT_PASSWORD,
+          message: 'password updated.',
+          status: LogStatus.SUCCESS,
+          serviceLog: UserModel,
+          options: {},
+        },
+      );
+    } catch (error) {
+      console.log(error);
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.INTERNAL_SERVER_ERROR,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.SIGNOUT,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: UserModel,
+          options: {},
+        },
+      );
     }
   }
 

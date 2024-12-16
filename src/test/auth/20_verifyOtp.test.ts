@@ -13,7 +13,7 @@ describe('Integration Test: Auth Module', () => {
     it('should verify the one time password', async () => {
       const data = JSON.stringify({
         email: testEmail,
-        OTPType: 'signup',
+        OTPType: 'password',
         otp: '123456',
       });
 
@@ -31,7 +31,7 @@ describe('Integration Test: Auth Module', () => {
         status: LogStatus.SUCCESS,
         code: StatusCode.OK,
         action: LogAction.VERIFY_OTP,
-        message: 'email otp verified.',
+        message: 'otp verified.',
       });
     }, 10000);
   });
