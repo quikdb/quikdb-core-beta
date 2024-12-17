@@ -5,7 +5,7 @@ import { CryptoUtils, sendEmail, Utils } from '@/utils';
 import { Model } from '@/services';
 import { BaseController } from './00_base.controller';
 import { AddToBlacklist } from '@/utils';
-import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER, FE_BASE_URL, NODE_ENV } from '@/config';
+import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER, FE_BASE_URL, mongoose, NODE_ENV } from '@/config';
 
 /**
  * AuthController handles the sign-in process for users.
@@ -37,7 +37,7 @@ class AuthController extends BaseController {
         { session, hiddenFields: ['password'] },
       );
 
-      if ((OTPType as OtpRequestType) === OtpRequestType.PASSWORD || (OTPType as OtpRequestType) === OtpRequestType.LINK) {
+      if ((OTPType as OtpRequestType) === OtpRequestType.PASSWORD) {
         if (!user.status) {
           return AuthController.abortTransactionWithResponse(
             res,
@@ -92,6 +92,28 @@ class AuthController extends BaseController {
       session?.endSession();
 
       if ((OTPType as OtpRequestType) === OtpRequestType.LINK) {
+        const user = await AuthController.userService.updateOneMongo(
+          {
+            email,
+          },
+          { deleted: false },
+          { session },
+        );
+
+        if (!user.status) {
+          return AuthController.abortTransactionWithResponse(
+            res,
+            StatusCode.INTERNAL_SERVER_ERROR,
+            session,
+            'Failed to update user status',
+            LogStatus.FAIL,
+            ...AuthController.staticsInResponse,
+            {
+              email: '',
+            },
+          );
+        }
+
         const data = JSON.stringify({
           otp,
           OTPType,
@@ -324,6 +346,7 @@ class AuthController extends BaseController {
       }
 
       let token: string;
+      let data: mongoose.FlattenMaps<UserDocument> & Required<{ _id: mongoose.FlattenMaps<unknown> }>;
       if ((OTPType as OtpRequestType) === OtpRequestType.PASSWORD || (OTPType as OtpRequestType) === OtpRequestType.LINK) {
         token = Utils.createToken({
           email,
@@ -353,6 +376,7 @@ class AuthController extends BaseController {
             },
           );
         }
+        data = user.data;
       }
 
       const updatedOtpData = await AuthController.otpService.updateOneMongo({ email }, { isValid: false }, { session });
@@ -380,6 +404,7 @@ class AuthController extends BaseController {
         StatusCode.OK,
         {
           token,
+          user: data,
         },
         {
           user: LogUsers.AUTH,
@@ -910,6 +935,7 @@ class AuthController extends BaseController {
         StatusCode.OK,
         {
           accessToken,
+          email,
         },
         {
           user: LogUsers.AUTH,
