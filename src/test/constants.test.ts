@@ -1,4 +1,4 @@
-export const testEmail = 'samsonajulor@gmail.com';
+export const testEmail = 'samson-tester2@gmail.com';
 export const projectName = 'quikdb';
 export const projectId = '675d318eb84a3b92418fa893';
 export const tokenForSamson =

@@ -71,7 +71,7 @@ class AuthController extends BaseController {
 
       const otp = NODE_ENV !== 'production' ? '123456' : Utils.generateOtp();
 
-      const createdOtp = await AuthController.otpService.updateOneMongo({ email }, { otp: `${email}-${otp}`, isValid: true }, { session });
+      const createdOtp = await AuthController.otpService.updateOneMongo({ email }, { otp: `${email}-${otp}`, isValid: false }, { session });
 
       if (!createdOtp.status) {
         return AuthController.abortTransactionWithResponse(
@@ -325,7 +325,7 @@ class AuthController extends BaseController {
         {
           email,
           otp: `${email}-${otp}`,
-          isValid: true,
+          isValid: false,
         },
         {},
         { session },
@@ -345,14 +345,12 @@ class AuthController extends BaseController {
         );
       }
 
-      let token: string;
+      const token = Utils.createToken({
+        email,
+        otp,
+      });
       let data: mongoose.FlattenMaps<UserDocument> & Required<{ _id: mongoose.FlattenMaps<unknown> }>;
       if ((OTPType as OtpRequestType) === OtpRequestType.PASSWORD || (OTPType as OtpRequestType) === OtpRequestType.LINK) {
-        token = Utils.createToken({
-          email,
-          otp,
-        });
-
         /************ Find user by email or phone number ************/
         const user = await AuthController.userService.findOneMongo(
           {
@@ -379,7 +377,7 @@ class AuthController extends BaseController {
         data = user.data;
       }
 
-      const updatedOtpData = await AuthController.otpService.updateOneMongo({ email }, { isValid: false }, { session });
+      const updatedOtpData = await AuthController.otpService.updateOneMongo({ email }, { isValid: true }, { session });
 
       if (!updatedOtpData.status) {
         return AuthController.abortTransactionWithResponse(

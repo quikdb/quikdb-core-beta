@@ -6,6 +6,8 @@ import { testEmail } from '../constants.test';
 
 const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';
 
+console.log({ BASE_URL });
+
 // const BASE_URL = API_BASE_URL;
 
 describe('Integration Test: Auth Module', () => {
@@ -13,7 +15,7 @@ describe('Integration Test: Auth Module', () => {
     it('should verify the one time password', async () => {
       const data = JSON.stringify({
         email: testEmail,
-        OTPType: OtpRequestType.PASSWORD,
+        OTPType: OtpRequestType.SIGNUP,
         otp: '123456',
       });
 
@@ -22,7 +24,7 @@ describe('Integration Test: Auth Module', () => {
       console.log({ encryptedData });
 
       const response = await request(BASE_URL).post('/a/verifyOtp').send({
-        data: 'e122845edfb70f510c82b08ef2e806e54d96d0f170dfaa5be1321003878b316b673c811ad7b2e511c01d81c3f4ab17aa26152dc1a6d5976e4fcc88b70a162eda174f506af7b67e09662206019a378e8105440bce1d56e2fb0207e717cbd21e4f',
+        data: encryptedData,
       });
 
       console.log('Test Response:', response.body);

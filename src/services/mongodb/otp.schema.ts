@@ -8,13 +8,16 @@ const OtpSchema = new mongoose.Schema<OtpDocument>(
     otp: {
       type: String,
       required: true,
+      unique: true,
     },
     email: {
       type: String,
+      required: true,
+      unique: true,
     },
     isValid: {
       type: Boolean,
-      default: false,
+      required: true,
     },
   },
   {
