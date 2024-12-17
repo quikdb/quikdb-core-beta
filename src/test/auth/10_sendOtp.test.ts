@@ -12,7 +12,7 @@ describe('Integration Test: Auth Module', () => {
     it('should send one time password', async () => {
       const data = JSON.stringify({
         email: testEmail,
-        OTPType: OtpRequestType.SIGNUP,
+        OTPType: OtpRequestType.PASSWORD,
       });
 
       const encryptedData = CryptoUtils.aesEncrypt(data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);

@@ -11,7 +11,7 @@ describe('Integration Test: Auth Module', () => {
   describe('[POST] /forgotPassword', () => {
     it('should update the user"s password.', async () => {
       const data = JSON.stringify({
-        password: 'password',
+        password: 'passwordone',
       });
 
       const encryptedData = CryptoUtils.aesEncrypt(data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);

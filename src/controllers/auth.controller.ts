@@ -509,6 +509,22 @@ class AuthController extends BaseController {
 
       const accessToken = Utils.createToken(payload);
 
+      const updatedOtpData = await AuthController.otpService.updateOneMongo({ email }, { isValid: true }, { session });
+
+      if (!updatedOtpData.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.NOT_FOUND,
+          session,
+          'failed to update otp data.',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
       const user = await AuthController.userService.createMongo(
         {
           email,
@@ -1287,6 +1303,29 @@ class AuthController extends BaseController {
       /************ encrypt password ************/
       const hashedPw = Utils.encryptPassword(password);
 
+      const otpData = await AuthController.otpService.findOneMongo(
+        {
+          email: currentUser?.email,
+          isValid: true,
+        },
+        {},
+        { session },
+      );
+
+      if (!otpData.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.INTERNAL_SERVER_ERROR,
+          session,
+          'session validation failed please try again.',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
       const user = await AuthController.userService.updateOneMongo(
         {
           email: currentUser?.email,
@@ -1301,6 +1340,22 @@ class AuthController extends BaseController {
           StatusCode.BAD_REQUEST,
           session,
           'invalid credentials',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      const updatedOtpData = await AuthController.otpService.updateOneMongo({ email: currentUser?.email }, { isValid: true }, { session });
+
+      if (!updatedOtpData.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.NOT_FOUND,
+          session,
+          'failed to update otp data.',
           LogStatus.FAIL,
           ...AuthController.staticsInResponse,
           {
