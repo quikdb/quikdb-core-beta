@@ -241,14 +241,27 @@ export const CheckTokenMiddleware = async (req: Request, res: Response, next: Ne
 
     console.log({ payload });
 
-    const user = await userService.findOneMongo(
-      {
-        $or: [{ email: payload?.email }, { principalId: payload?.principalId }],
-        deleted: false,
-      },
-      {},
-      { session: null, hiddenFields: ['password'] },
-    );
+    if (!payload) {
+      return next(new ApiError('invalid or expired token', 'AuthMiddleware', StatusCode.UNAUTHORIZED));
+    }
+
+    const user = payload?.principalId
+      ? await userService.findOneMongo(
+          {
+            principalId: payload?.principalId,
+            deleted: false,
+          },
+          {},
+          { session: null, hiddenFields: ['password'] },
+        )
+      : await userService.findOneMongo(
+          {
+            email: payload.email,
+            deleted: false,
+          },
+          {},
+          { session: null, hiddenFields: ['password'] },
+        );
 
     if (!user.status) {
       return next(new ApiError('user authorization failed.', 'AuthMiddleware', StatusCode.UNAUTHORIZED));

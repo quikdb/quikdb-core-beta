@@ -1295,6 +1295,8 @@ class AuthController extends BaseController {
     try {
       const currentUser = res.locals.currentUser;
 
+      console.log({ currentUser });
+
       /************ Extract validated sign-in data ************/
       const validatedForgotPasswordRequestBody = res.locals.validatedForgotPasswordRequestBody;
 
@@ -1348,7 +1350,7 @@ class AuthController extends BaseController {
         );
       }
 
-      const updatedOtpData = await AuthController.otpService.updateOneMongo({ email: currentUser?.email }, { isValid: true }, { session });
+      const updatedOtpData = await AuthController.otpService.updateOneMongo({ email: currentUser?.email }, { isValid: false }, { session });
 
       if (!updatedOtpData.status) {
         return AuthController.abortTransactionWithResponse(

@@ -5,13 +5,15 @@ import { CryptoUtils } from '@/utils';
 import { tokenForSamson } from '../constants.test';
 
 const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';
+
+console.log({ BASE_URL });
 const token = tokenForSamson;
 
 describe('Integration Test: Auth Module', () => {
   describe('[POST] /forgotPassword', () => {
     it('should update the user"s password.', async () => {
       const data = JSON.stringify({
-        password: 'passwordone',
+        password: 'password2',
       });
 
       const encryptedData = CryptoUtils.aesEncrypt(data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
