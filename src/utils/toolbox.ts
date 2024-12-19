@@ -114,6 +114,10 @@ export class Utils {
     return bcrypt.compareSync(password, hash);
   }
 
+  static generateRandomPassword(): string {
+    return uuidv4();
+  }
+
   static createToken(payload: object, expiresIn = '5m'): string {
     return sign(payload, JWT_SECRET_KEY as string, { expiresIn });
   }

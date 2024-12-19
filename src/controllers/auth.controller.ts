@@ -1050,6 +1050,7 @@ class AuthController extends BaseController {
         {
           principalId,
           username,
+          credits: auth.data.credits + 500,
         },
         { session },
       );
@@ -1211,11 +1212,19 @@ class AuthController extends BaseController {
       const validatedSigninWithIIRequestBody = res.locals.validatedSigninWithIIRequestBody;
       const { principalId } = validatedSigninWithIIRequestBody;
 
+      const password = Utils.generateRandomPassword();
+
+      const encryptedPassword = CryptoUtils.aesEncrypt(password, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
       const user = await AuthController.userService.updateOneMongo(
         {
           principalId,
         },
-        {},
+        {
+          email: `${principalId}@quikdb.com`,
+          $inc: { credits: 0.5 },
+          password: Utils.encryptPassword(password),
+        },
         { session },
       );
 
@@ -1236,6 +1245,7 @@ class AuthController extends BaseController {
       /************ Generate access token ************/
       const payload = {
         principalId,
+        encryptedPassword,
       };
 
       const accessToken = Utils.createToken(payload, '1d');
@@ -1249,11 +1259,12 @@ class AuthController extends BaseController {
         StatusCode.OK,
         {
           accessToken,
+          encryptedPassword,
         },
         {
           user: LogUsers.AUTH,
           action: LogAction.SIGNIN,
-          message: 'signin success.',
+          message: 'signin success. please keep the password token safe.',
           status: LogStatus.SUCCESS,
           serviceLog: UserModel,
           options: {
