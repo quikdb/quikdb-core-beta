@@ -164,17 +164,17 @@ class PaymentController extends BaseController {
       let credits = 0;
 
       if (payment.data.databaseVersion === DatabaseVersion.PREMIUM) {
-        credits = currentUser.credits + Number(PREMIUM_PRICE);
+        credits = Number(currentUser.credits) + Number(PREMIUM_PRICE);
       } else if (payment.data.databaseVersion === DatabaseVersion.PROFESSIONAL) {
-        credits = currentUser.credits + Number(PROFESSIONAL_PRICE);
+        credits = Number(currentUser.credits) + Number(PROFESSIONAL_PRICE);
       } else {
-        credits = currentUser.credits + 0;
+        credits = Number(currentUser.credits) + 0;
       }
 
       const user = await PaymentController.userService.updateOneMongo(
         { _id: currentUser._id },
         {
-          credits: credits * 1000,
+          credits,
         },
       );
 
