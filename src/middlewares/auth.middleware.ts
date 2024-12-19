@@ -267,6 +267,16 @@ export const CheckTokenMiddleware = async (req: Request, res: Response, next: Ne
       return next(new ApiError('user authorization failed.', 'AuthMiddleware', StatusCode.UNAUTHORIZED));
     }
 
+    if (payload?.encryptedPassword) {
+      const password = CryptoUtils.aesDecrypt(payload.encryptedPassword, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+      const isValidPassword = Utils.comparePasswords(password, user.data.password);
+
+      if (!isValidPassword) {
+        return next(new ApiError('principal validation failed.', 'AuthMiddleware', StatusCode.UNAUTHORIZED));
+      }
+    }
+
     res.locals.currentUser = user.data;
     return next();
   } catch (error) {

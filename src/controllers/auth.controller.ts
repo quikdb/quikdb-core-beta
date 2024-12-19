@@ -1307,8 +1307,6 @@ class AuthController extends BaseController {
     try {
       const currentUser = res.locals.currentUser;
 
-      console.log({ currentUser });
-
       /************ Extract validated sign-in data ************/
       const validatedForgotPasswordRequestBody = res.locals.validatedForgotPasswordRequestBody;
 

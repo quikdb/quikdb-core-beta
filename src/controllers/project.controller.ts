@@ -56,7 +56,7 @@ class ProjectController extends BaseController {
       );
 
       /************ Handle invalid credentials ************/
-      if (!project.status || project.data.owner.toString() !== currentUser._id.toString() || currentUser?.email !== email) {
+      if (!project.status || project.data.owner.toString() !== currentUser._id.toString()) {
         return ProjectController.abortTransactionWithResponse(
           res,
           StatusCode.BAD_REQUEST,
