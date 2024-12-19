@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { UserDocument, UserModel } from '@/services/mongodb';
-import { LogAction, LogStatus, LogUsers, PaymentStatus, PaymentType, StatusCode } from '@/@types';
+import { DatabaseVersion, LogAction, LogStatus, LogUsers, PaymentStatus, PaymentType, StatusCode } from '@/@types';
 import { Utils } from '@/utils';
 import { Model } from '@/services';
 import { BaseController } from './00_base.controller';
+import { PREMIUM_PRICE, PROFESSIONAL_PRICE } from '@/config';
 
 /**
  * PaymentControllers handles the sign-in process for PAYPALs.
@@ -18,12 +19,33 @@ class PaymentController extends BaseController {
    * @param res - Express response object to send the response.
    */
   async CreatePaypalOrder(req: Request, res: Response) {
+    const currentUser = res.locals.currentUser;
     try {
       /************ Extract validated create order data ************/
       const validatedCreatePaypalOrderRequest = res.locals.validatedCreatePaypalOrderRequest;
       const { amount, databaseVersion, projectId } = validatedCreatePaypalOrderRequest;
 
-      /************ Find PAYPAL by email or phone number ************/
+      const project = await PaymentController.projectService.findOneMongo({ _id: projectId, owner: currentUser._id }, {});
+
+      if (!project.status) {
+        return Utils.apiResponse<UserDocument>(
+          res,
+          StatusCode.INTERNAL_SERVER_ERROR,
+          {},
+          {
+            user: LogUsers.PAYPAL,
+            action: LogAction.CREATE_PAYPAL_ORDER,
+            message: 'project not found.',
+            status: LogStatus.FAIL,
+            serviceLog: UserModel,
+            options: {
+              email: '',
+            },
+          },
+        );
+      }
+
+      /************ create paypal order ************/
       const response = await PaymentController.paymentService.createPaypalOrder({
         amount: String(amount),
       });
@@ -106,6 +128,8 @@ class PaymentController extends BaseController {
       const validatedCapturePaypalOrderRequest = res.locals.validatedCapturePaypalOrderRequest;
       const { order } = validatedCapturePaypalOrderRequest;
 
+      console.log({ order });
+
       const [orderId, projectId] = order.split('-');
 
       /************ Find PAYPAL by email or phone number ************/
@@ -137,10 +161,45 @@ class PaymentController extends BaseController {
         );
       }
 
+      let credits = 0;
+
+      if (payment.data.databaseVersion === DatabaseVersion.PREMIUM) {
+        credits = currentUser.credits + Number(PREMIUM_PRICE);
+      } else if (payment.data.databaseVersion === DatabaseVersion.PROFESSIONAL) {
+        credits = currentUser.credits + Number(PROFESSIONAL_PRICE);
+      } else {
+        credits = currentUser.credits + 0;
+      }
+
+      const user = await PaymentController.userService.updateOneMongo(
+        { _id: currentUser._id },
+        {
+          credits: credits * 1000,
+        },
+      );
+
+      if (!user.status) {
+        return Utils.apiResponse<UserDocument>(
+          res,
+          StatusCode.INTERNAL_SERVER_ERROR,
+          {},
+          {
+            user: LogUsers.PAYPAL,
+            action: LogAction.CREATE_PAYPAL_ORDER,
+            message: 'failed to update user credits.',
+            status: LogStatus.FAIL,
+            serviceLog: UserModel,
+            options: {
+              email: '',
+            },
+          },
+        );
+      }
+
       return Utils.apiResponse<UserDocument>(
         res,
         StatusCode.OK,
-        { ...JSON.parse(response.body as string) },
+        { ...JSON.parse(response.body as string), user: user.data },
         {
           user: LogUsers.PAYPAL,
           action: LogAction.CAPTURE_PAYPAL_ORDER,
