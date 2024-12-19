@@ -1260,6 +1260,7 @@ class AuthController extends BaseController {
         {
           accessToken,
           encryptedPassword,
+          user: user.data,
         },
         {
           user: LogUsers.AUTH,
