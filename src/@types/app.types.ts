@@ -46,11 +46,6 @@ export enum LogUsers {
   TRANSACTION = 'transaction.service',
   PAYPAL = 'paypal.service',
   STRIPE = 'stripe.service',
-  PREMBLY = 'prembly.service',
-  PLAID = 'plaid.service',
-  BENTO = 'bento.service',
-  FCM = 'fcm.service',
-  FACEPROOF = 'faceproof.service',
 }
 
 export enum LogAction {

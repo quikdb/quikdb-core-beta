@@ -1129,6 +1129,7 @@ class AuthController extends BaseController {
         StatusCode.OK,
         {
           accessToken,
+          projecId: token.data.projectId,
         },
         {
           user: LogUsers.AUTH,
