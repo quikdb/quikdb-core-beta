@@ -997,6 +997,8 @@ class AuthController extends BaseController {
       /************ Extract validated sign-in data ************/
       const validatedSignInWCliRequestBody = res.locals.validatedSignInWCliRequestBody;
 
+      console.log({ validatedSignInWCliRequestBody });
+
       const { email, password, principalId, username, projectTokenRef } = validatedSignInWCliRequestBody;
 
       /************ Find user by email or phone number ************/
@@ -1041,6 +1043,45 @@ class AuthController extends BaseController {
         );
       }
 
+      const token = await AuthController.tokenService.findOneMongo({ token: projectTokenRef }, {}, { session });
+
+      if (!token.status) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'token validation error.',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      const decryptedToken = CryptoUtils.aesDecrypt(projectTokenRef, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+      const tokenPayload = Utils.verifyToken(decryptedToken);
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { iat, exp, email: projectEmail, ...rest } = tokenPayload as any;
+
+      console.log({ projectEmail });
+
+      if (email !== projectEmail) {
+        return AuthController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'token validation failed.',
+          LogStatus.FAIL,
+          ...AuthController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
       /************ updated user canister details ************/
       const userUpdate = await AuthController.userService.updateOneMongo(
         {
@@ -1050,7 +1091,7 @@ class AuthController extends BaseController {
         {
           principalId,
           username,
-          credits: auth.data.credits + 500,
+          credits: auth.data.credits + 0.75,
         },
         { session },
       );
@@ -1070,28 +1111,9 @@ class AuthController extends BaseController {
         );
       }
 
-      const token = await AuthController.tokenService.findOneMongo({ token: projectTokenRef }, {}, { session });
-
-      if (!token.status) {
-        return AuthController.abortTransactionWithResponse(
-          res,
-          StatusCode.BAD_REQUEST,
-          session,
-          'token validation failed.',
-          LogStatus.FAIL,
-          ...AuthController.staticsInResponse,
-          {
-            email: '',
-          },
-        );
-      }
-
-      const decryptedToken = CryptoUtils.aesDecrypt(projectTokenRef, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
-
-      const tokenPayload = Utils.verifyToken(decryptedToken);
-
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { iat, exp, ...rest } = tokenPayload as any;
+      /************ Commit the transaction and send a successful response ************/
+      await session?.commitTransaction();
+      session?.endSession();
 
       /************ Generate access token ************/
       const payload = {
@@ -1101,63 +1123,6 @@ class AuthController extends BaseController {
 
       /************ Generate access token ************/
       const accessToken = Utils.createToken(payload);
-
-      /***** send cli sign in notification and activate the token with the request. ******/
-      await sendEmail(
-        email,
-        'You signed in',
-        `
-    <html>
-      <head>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-          }
-          .container {
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-          }
-          h1 {
-            color: #333;
-            text-align: center;
-            font-size: 24px;
-          }
-          .content {
-            font-size: 16px;
-            color: #555;
-            text-align: center;
-          }
-          .timestamp {
-            font-size: 14px;
-            color: #888;
-            text-align: center;
-            margin-top: 10px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h1>Did you just sign in?</h1>
-          <p class="content">We noticed a sign-in attempt to your account.</p>
-          <p class="content">If this was you, no further action is needed.</p>
-          <p class="timestamp">Signed in at: ${new Date().toLocaleString()}</p>
-        </div>
-      </body>
-    </html>
-  `,
-      );
-
-      /************ Commit the transaction and send a successful response ************/
-      await session?.commitTransaction();
-      session?.endSession();
 
       return Utils.apiResponse<UserDocument>(
         res,
@@ -1265,7 +1230,7 @@ class AuthController extends BaseController {
         {
           user: LogUsers.AUTH,
           action: LogAction.SIGNIN,
-          message: 'signin success. please keep the password token safe.',
+          message: 'signin success.',
           status: LogStatus.SUCCESS,
           serviceLog: UserModel,
           options: {

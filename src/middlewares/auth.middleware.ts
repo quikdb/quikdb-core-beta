@@ -160,7 +160,7 @@ export const SigninWithGoogleMiddleware = async (req: Request, res: Response, ne
 };
 
 export const SigninWithCliMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  console.log({ req: req.body });
+  const userService = new MongoApiService<UserDocument>(UserModel);
   try {
     const { value, error } = Utils.validateJoiSchema(ValidateAuthRequest, req.body);
 
@@ -168,6 +168,36 @@ export const SigninWithCliMiddleware = async (req: Request, res: Response, next:
 
     if (error) {
       next(new ApiError(error, 'SigninWithCliMiddleware', StatusCode.UNAUTHORIZED));
+    }
+
+    if (value.identity) {
+      const decryptedIdentity = CryptoUtils.aesDecrypt(value.identity, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+      const identity = JSON.parse(decryptedIdentity);
+
+      console.log({ identity });
+
+      const { principalId, encryptedPassword } = identity;
+
+      const user = await userService.findOneMongo(
+        {
+          principalId,
+          deleted: false,
+        },
+        {},
+        { session: null, hiddenFields: ['password'] },
+      );
+
+      const password = CryptoUtils.aesDecrypt(encryptedPassword, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+      res.locals.validatedSignInWCliRequestBody = {
+        email: user.data.email,
+        password,
+        principalId,
+        username: value.username,
+        projectTokenRef: value.projectTokenRef,
+      };
+      return next();
     }
 
     res.locals.validatedSignInWCliRequestBody = value;

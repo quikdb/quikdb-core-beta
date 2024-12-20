@@ -23,23 +23,56 @@ export const ValidateOtpRequest = Joi.object({
   }),
 });
 
-export const ValidateAuthRequest = Joi.object({
-  email: Joi.string().email().required().label('email').messages({
-    string: 'valid email is required',
-  }),
-  password: Joi.string().min(8).max(15).required().label('password').messages({
-    string: 'password of valid length is required',
-  }),
-  principalId: Joi.string().optional().label('principal').messages({
-    string: 'principal is not valid',
-  }),
-  username: Joi.string().optional().label('username').messages({
-    string: 'username is not valid',
-  }),
-  projectTokenRef: Joi.string().optional().label('projectTokenRef').messages({
-    string: 'projectTokenRef is not valid',
-  }),
-});
+export const ValidateAuthRequest = Joi.alternatives()
+  .try(
+    Joi.object({
+      identity: Joi.string().required().label('identity').messages({
+        'string.base': 'identity must be a valid string',
+        'any.required': 'identity is required if email, password, and principalId are not provided',
+      }),
+      email: Joi.forbidden().messages({ 'any.unknown': 'email is not allowed when identity is provided' }),
+      password: Joi.forbidden().messages({ 'any.unknown': 'password is not allowed when identity is provided' }),
+      principalId: Joi.forbidden().messages({ 'any.unknown': 'principalId is not allowed when identity is provided' }),
+      username: Joi.string().required().label('username').messages({
+        'string.base': 'username must be a valid string',
+        'any.required': 'username is required',
+      }),
+      projectTokenRef: Joi.string().required().label('projectTokenRef').messages({
+        'string.base': 'projectTokenRef must be a valid string',
+        'any.required': 'projectTokenRef is required',
+      }),
+    }),
+
+    Joi.object({
+      email: Joi.string().email().required().label('email').messages({
+        'string.email': 'valid email is required',
+        'any.required': 'email is required if identity is not provided',
+      }),
+      password: Joi.string().min(8).max(15).required().label('password').messages({
+        'string.min': 'password must be at least 8 characters',
+        'string.max': 'password must not exceed 15 characters',
+        'any.required': 'password is required if identity is not provided',
+      }),
+      principalId: Joi.string().required().label('principalId').messages({
+        'string.base': 'principalId must be a valid string',
+        'any.required': 'principalId is required if identity is not provided',
+      }),
+      identity: Joi.forbidden().messages({ 'any.unknown': 'identity is not allowed when email, password, and principalId are provided' }),
+      username: Joi.string().required().label('username').messages({
+        'string.base': 'username must be a valid string',
+        'any.required': 'username is required',
+      }),
+      projectTokenRef: Joi.string().required().label('projectTokenRef').messages({
+        'string.base': 'projectTokenRef must be a valid string',
+        'any.required': 'projectTokenRef is required',
+      }),
+    }),
+  )
+  .label('ValidateAuthRequest')
+  .messages({
+    'alternatives.match':
+      'Either identity or email/password/principalId combination is required, but not both. username and projectTokenRef are required by default.',
+  });
 
 export const ValidateGoogleAuthRequest = Joi.object({
   code: Joi.string().required().label('code').messages({

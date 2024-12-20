@@ -7,7 +7,7 @@ const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:45
 
 describe('Integration Test: Auth Module', () => {
   describe('[POST] /signinWithCli', () => {
-    it('should sign in with the email and password of the user.', async () => {
+    it('should sign in using the cli details of the user.', async () => {
       const data = {
         email: testEmail,
         password: 'password',

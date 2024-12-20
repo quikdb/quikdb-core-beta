@@ -1,39 +1,41 @@
 import { LogAction, LogStatus, StatusCode } from '@/@types';
 import { NODE_ENV, API_BASE_URL, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER } from '@/config';
 import request from 'supertest';
+import { encryptedPassword, principalId, projectTokenRef } from '../constants.test';
 import { CryptoUtils } from '@/utils';
-import { tokenForII } from '../constants.test';
 
 const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';
 
-console.log({ BASE_URL });
-const token = tokenForII;
-
 describe('Integration Test: Auth Module', () => {
-  describe('[POST] /forgotPassword', () => {
-    it('should update the user"s password.', async () => {
-      const data = JSON.stringify({
-        password: 'password2',
+  describe('[POST] /signinWithCli', () => {
+    it('should sign in using the cli details of the user with internet identity.', async () => {
+      const identity = JSON.stringify({
+        principalId,
+        encryptedPassword,
       });
 
-      const encryptedData = CryptoUtils.aesEncrypt(data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+      const encryptedData = CryptoUtils.aesEncrypt(identity, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
 
       console.log({ encryptedData });
+      const data = {
+        identity: encryptedData,
+        username: 'Samson',
+        projectTokenRef,
+      };
 
       const response = await request(BASE_URL)
-        .post('/a/forgotPassword')
+        .post('/a/signinWithCli')
         .send({
-          data: encryptedData,
-        })
-        .set('authorization', token);
+          ...data,
+        });
 
       console.log('Test Response:', response.body);
 
       expect(response.body).toMatchObject({
         status: LogStatus.SUCCESS,
         code: StatusCode.OK,
-        action: LogAction.FORGOT_PASSWORD,
-        message: 'password updated.',
+        action: LogAction.SIGNIN,
+        message: 'signin success.',
       });
     }, 10000);
   });

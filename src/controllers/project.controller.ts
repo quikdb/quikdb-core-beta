@@ -22,6 +22,7 @@ class ProjectController extends BaseController {
   async CreateProjectToken(req: Request, res: Response) {
     const session = null;
     const currentUser = res.locals.currentUser;
+    console.log({ currentUser });
     try {
       /************ Extract validated fetch project data ************/
       const validatedIdRequest = res.locals.validatedIdRequest;
@@ -43,7 +44,7 @@ class ProjectController extends BaseController {
 
       /************ Extract validated create project token data ************/
       const validatedCreateProjectTokenRequestBody = res.locals.validatedCreateProjectTokenRequestBody;
-      const { email, databaseVersion, duration } = validatedCreateProjectTokenRequestBody;
+      const { databaseVersion, duration } = validatedCreateProjectTokenRequestBody;
 
       /************ Find Project by email or phone number ************/
       const project = await ProjectController.projectService.findOneMongo(
@@ -95,7 +96,7 @@ class ProjectController extends BaseController {
 
       /************ Generate access token ************/
       const payload = {
-        email,
+        email: currentUser.email,
         databaseVersion,
         projectId: id,
         projectName: project.data.name,
