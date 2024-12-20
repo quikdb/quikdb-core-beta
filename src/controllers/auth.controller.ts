@@ -1272,7 +1272,7 @@ class AuthController extends BaseController {
     try {
       const currentUser = res.locals.currentUser;
 
-      /************ Extract validated sign-in data ************/
+      /************ Extract validated forgot password data ************/
       const validatedForgotPasswordRequestBody = res.locals.validatedForgotPasswordRequestBody;
 
       const { password } = validatedForgotPasswordRequestBody;
@@ -1410,6 +1410,102 @@ class AuthController extends BaseController {
         {
           user: LogUsers.AUTH,
           action: LogAction.SIGNOUT,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: UserModel,
+          options: {},
+        },
+      );
+    }
+  }
+
+  /**
+   * Encrypts user data.
+   * @param req - Express request object containing the data to be encrypted.
+   * @param res - Express response object to send the response.
+   */
+  async EncryptData(req: Request, res: Response) {
+    try {
+      /************ Extract validated data to be encrypted ************/
+      const validatedPrecryptRequest = res.locals.validatedPrecryptRequest;
+
+      const encryptedData = CryptoUtils.aesEncrypt(validatedPrecryptRequest, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.OK,
+        {
+          encryptedData,
+        },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.ENCRYPT_DATA,
+          message: 'data encrypted.',
+          status: LogStatus.SUCCESS,
+          serviceLog: UserModel,
+          options: {},
+        },
+      );
+    } catch (error) {
+      console.log(error);
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.INTERNAL_SERVER_ERROR,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.ENCRYPT_DATA,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: UserModel,
+          options: {},
+        },
+      );
+    }
+  }
+
+  /**
+   * Decrypts user data.
+   * @param req - Express request object containing the data to be encrypted.
+   * @param res - Express response object to send the response.
+   */
+  async DecryptData(req: Request, res: Response) {
+    try {
+      /************ Extract validated data to be decrypted ************/
+      const validatedPrecryptRequest = res.locals.validatedPrecryptRequest;
+
+      console.log({ validatedPrecryptRequest });
+
+      const decryptedData = CryptoUtils.aesDecrypt(validatedPrecryptRequest, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.OK,
+        {
+          decryptedData,
+        },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.ENCRYPT_DATA,
+          message: 'data decrypted.',
+          status: LogStatus.SUCCESS,
+          serviceLog: UserModel,
+          options: {},
+        },
+      );
+    } catch (error) {
+      console.log(error);
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<UserDocument>(
+        res,
+        StatusCode.INTERNAL_SERVER_ERROR,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.AUTH,
+          action: LogAction.ENCRYPT_DATA,
           message: JSON.stringify(error),
           status: LogStatus.FAIL,
           serviceLog: UserModel,

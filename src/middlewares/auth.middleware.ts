@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { ValidateRequests, ValidateAuthRequest, ValidateGoogleAuthRequest } from '@/validations/validations';
 import { Utils, ApiError, CryptoUtils } from '@/utils';
-import { UserDocument, UserModel } from '@/services/mongodb';
+import { TokenDocument, TokenModel, UserDocument, UserModel } from '@/services/mongodb';
 import { MongoApiService } from '@/services';
 import { IsTokenBlacklisted } from '@/utils';
 import { StatusCode, LogUsers, LogAction, LogStatus } from '@/@types';
@@ -311,5 +311,45 @@ export const CheckTokenMiddleware = async (req: Request, res: Response, next: Ne
     return next();
   } catch (error) {
     next(new ApiError(error.message || error, 'SignInMiddleware', StatusCode.UNAUTHORIZED));
+  }
+};
+
+export const EncryptionAuthMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tokenService = new MongoApiService<TokenDocument>(TokenModel);
+    const projectTokenRef = Utils.checkToken(req);
+
+    console.log({ projectTokenRef });
+
+    if (!projectTokenRef) {
+      return next(new ApiError('unauthorized', 'EncryptionAuthMiddleware', StatusCode.UNAUTHORIZED));
+    }
+
+    if (projectTokenRef) {
+      if (IsTokenBlacklisted(projectTokenRef)) {
+        return next(new ApiError('please sign in.', 'EncryptionAuthMiddleware', StatusCode.UNAUTHORIZED));
+      }
+    }
+
+    const token = await tokenService.findOneMongo({ token: projectTokenRef }, {});
+
+    if (!token.status) {
+      return next(new ApiError('token validation error', 'EncryptionAuthMiddleware', StatusCode.UNAUTHORIZED));
+    }
+
+    const decryptedToken = CryptoUtils.aesDecrypt(projectTokenRef, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+    const tokenPayload = Utils.verifyToken(decryptedToken);
+
+    if (!tokenPayload) {
+      return next(new ApiError('crypt authorization failed.', 'EncryptionAuthMiddleware', StatusCode.UNAUTHORIZED));
+    }
+
+    console.log({ body: req.body });
+
+    res.locals.validatedPrecryptRequest = req.body.data;
+    return next();
+  } catch (error) {
+    next(new ApiError(error.message || error, 'EncryptionAuthMiddleware', StatusCode.UNAUTHORIZED));
   }
 };

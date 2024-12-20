@@ -55,6 +55,7 @@ export enum LogUsers {
 
 export enum LogAction {
   CREATE = 'create',
+  ENCRYPT_DATA = 'encrypt_data',
   GET_AUTH_URL = 'get_auth_url',
   CREATE_PROJECT = 'create_project',
   FETCH_PROJECT = 'fetch_project',
