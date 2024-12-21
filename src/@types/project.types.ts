@@ -3,6 +3,7 @@ export type ProjectType = {
   owner: string;
   code?: string;
   isActive: boolean;
+  databaseVersion: DatabaseVersion;
 };
 
 export enum DatabaseVersion {

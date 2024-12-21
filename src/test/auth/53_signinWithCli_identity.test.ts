@@ -9,6 +9,7 @@ const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:45
 describe('Integration Test: Auth Module', () => {
   describe('[POST] /signinWithCli', () => {
     it('should sign in using the cli details of the user with internet identity.', async () => {
+      /// this is generated on the client side.
       const identity = JSON.stringify({
         principalId,
         encryptedPassword,

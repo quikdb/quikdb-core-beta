@@ -239,7 +239,7 @@ class ProjectController extends BaseController {
           userId: currentUser._id.toString(),
           projectId: id,
         },
-        { session },
+        { session, populate: ['projectId'] },
       );
 
       if (!token.status) {
@@ -444,7 +444,7 @@ class ProjectController extends BaseController {
     try {
       /************ Extract validated create project data ************/
       const validatedCreateProjectRequestBody = res.locals.validatedCreateProjectRequestBody;
-      const { id } = validatedCreateProjectRequestBody;
+      const { id, databaseVersion } = validatedCreateProjectRequestBody;
 
       /************ Find Project by email or phone number ************/
       const project = await ProjectController.projectService.findOneMongo(
@@ -498,6 +498,7 @@ class ProjectController extends BaseController {
         {
           name: id, // id is the name in this case,
           owner: currentUser._id,
+          databaseVersion,
         },
         { session },
       );

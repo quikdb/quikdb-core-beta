@@ -1,4 +1,4 @@
-import { LogAction, LogStatus, StatusCode } from '@/@types';
+import { DatabaseVersion, LogAction, LogStatus, StatusCode } from '@/@types';
 import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER, NODE_ENV, API_BASE_URL } from '@/config';
 import { CryptoUtils } from '@/utils';
 import request from 'supertest';
@@ -11,7 +11,8 @@ describe('Integration Test: Auth Module', () => {
   describe('[POST] /v/p', () => {
     it('should create a project.', async () => {
       const data = JSON.stringify({
-        id: 'quikdb',
+        id: 'university of ontario',
+        databaseVersion: DatabaseVersion.FREE,
       });
 
       const encryptedData = CryptoUtils.aesEncrypt(data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);

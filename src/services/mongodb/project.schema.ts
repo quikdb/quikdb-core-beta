@@ -1,5 +1,5 @@
 import * as mongoose from 'mongoose';
-import { ProjectType } from '@/@types';
+import { DatabaseVersion, ProjectType } from '@/@types';
 
 type ProjectDocument = ProjectType & mongoose.Document;
 
@@ -12,6 +12,7 @@ const ProjectSchema: mongoose.Schema = new mongoose.Schema(
       ref: 'User',
     },
     code: { type: String },
+    databaseVersion: { type: String, enum: Object.values(DatabaseVersion), required: true },
     isActive: { type: Boolean, required: true, default: false },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } },

@@ -93,6 +93,13 @@ export const ValidateProjectRequest = Joi.object({
   id: Joi.string().required().label('id').messages({
     string: 'project name or id is required',
   }),
+  databaseVersion: Joi.string()
+    .required()
+    .valid(...Object.values(DatabaseVersion))
+    .label('database version')
+    .messages({
+      string: `Database version of either ${Object.values(DatabaseVersion).join(', ')} is required`,
+    }),
 });
 
 export const ValidateCreateProjectRequest = Joi.object({
