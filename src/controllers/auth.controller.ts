@@ -1043,7 +1043,7 @@ class AuthController extends BaseController {
         );
       }
 
-      const token = await AuthController.tokenService.findOneMongo({ token: projectTokenRef }, {}, { session });
+      const token = await AuthController.tokenService.findOneMongo({ token: projectTokenRef }, {}, { session, populate: ['projectId'] });
 
       if (!token.status) {
         return AuthController.abortTransactionWithResponse(
@@ -1129,7 +1129,7 @@ class AuthController extends BaseController {
         StatusCode.OK,
         {
           accessToken,
-          projectId: token.data.projectId,
+          project: token.data.projectId,
         },
         {
           user: LogUsers.AUTH,

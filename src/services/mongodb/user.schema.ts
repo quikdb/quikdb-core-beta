@@ -9,7 +9,7 @@ const CanisterDetailsSchema = new mongoose.Schema({
   url: { type: String, required: true },
   owner: { type: String, required: true },
   canisterId: { type: String, unique: true, sparse: true },
-  status: { type: String, required: true, default: false },
+  status: { type: String, required: true, default: true },
   controllers: { type: [String], required: true },
 });
 

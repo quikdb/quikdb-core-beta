@@ -11,7 +11,7 @@ describe('Integration Test: Auth Module', () => {
   describe('[POST] /v/p', () => {
     it('should create a project.', async () => {
       const data = JSON.stringify({
-        id: 'university of ontario',
+        id: 'quikdb',
         databaseVersion: DatabaseVersion.FREE,
       });
 
