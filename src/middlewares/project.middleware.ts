@@ -64,3 +64,25 @@ export const GetIdInRequestMiddleware = async (req: Request, res: Response, next
     next(new ApiError(error.message || error, 'GetIdInRequestMiddleware', 401));
   }
 };
+
+export const ActivateProjectMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { value, error } = Utils.validateJoiSchema(ValidateRequests, req.body);
+
+    if (error) {
+      next(new ApiError(error, 'ActivateProjectMiddleware', 401));
+    }
+
+    const decryptedRequest = CryptoUtils.aesDecrypt(value.data, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+
+    console.log({ decryptedRequest });
+
+    const requestObject = JSON.parse(decryptedRequest);
+
+    res.locals.validatedActivateProjectRequest = requestObject;
+
+    next();
+  } catch (error) {
+    next(new ApiError(error.message || error, 'ActivateProjectMiddleware', 401));
+  }
+};

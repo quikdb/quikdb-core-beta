@@ -1,3 +1,5 @@
+import { DatabaseVersion } from './project.types';
+
 export type UserType = {
   username: string;
   email: string;
@@ -13,7 +15,9 @@ export type CanisterDetails = {
   name: string;
   url: string;
   owner: string;
+  databaseVersion: DatabaseVersion;
   canisterId: string;
-  status: string;
+  projectId: string;
+  status?: string;
   controllers: string[];
 };

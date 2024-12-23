@@ -52,6 +52,8 @@ export enum LogAction {
   CREATE = 'create',
   ENCRYPT_DATA = 'encrypt_data',
   GET_AUTH_URL = 'get_auth_url',
+  ACTIVATE_PROJECT = 'activate_project',
+  DEACTIVATE_PROJECT = 'deactivate_project',
   CREATE_PROJECT = 'create_project',
   FETCH_PROJECT = 'fetch_project',
   DELETE_PROJECT = 'delete_project',

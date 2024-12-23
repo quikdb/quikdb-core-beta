@@ -269,7 +269,7 @@ export const CheckTokenMiddleware = async (req: Request, res: Response, next: Ne
 
     const payload = Utils.verifyToken(token) as any;
 
-    console.log({ payload });
+    console.log({ checkTokenPayload: payload });
 
     if (!payload) {
       return next(new ApiError('invalid or expired token', 'AuthMiddleware', StatusCode.UNAUTHORIZED));

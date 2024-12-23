@@ -5,7 +5,12 @@ type UserDocument = UserType & mongoose.Document;
 
 const CanisterDetailsSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  type: { type: String, enum: Object.values(DatabaseVersion), required: true },
+  projectId: {
+    type: String,
+    required: true,
+    ref: 'Project',
+  },
+  databaseVersion: { type: String, enum: Object.values(DatabaseVersion), required: true },
   url: { type: String, required: true },
   owner: { type: String, required: true },
   canisterId: { type: String, unique: true, sparse: true },

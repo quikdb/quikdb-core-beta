@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { ProjectDocument, ProjectModel, TokenDocument, TokenModel } from '@/services/mongodb';
-import { LogAction, LogStatus, LogUsers, StatusCode, Token } from '@/@types';
+import { CanisterDetails, DatabaseVersion, LogAction, LogStatus, LogUsers, PaymentStatus, StatusCode, Token } from '@/@types';
 import * as fs from 'fs';
 import * as path from 'path';
 import { CryptoUtils, MongoTools, Utils } from '@/utils';
@@ -1147,6 +1147,355 @@ class ProjectController extends BaseController {
           message: JSON.stringify(error),
           status: LogStatus.FAIL,
           serviceLog: TokenModel,
+          options: {},
+        },
+      );
+    } finally {
+      session?.endSession();
+    }
+  }
+
+  /**
+   * Handles the Project code upload process.
+   * @param req - Express request object containing the Project sign-up data.
+   * @param res - Express response object to send the response.
+   */
+  async ActivateProject(req: Request, res: Response) {
+    const session = null;
+    const currentUser = res.locals.currentUser;
+    console.log({ currentUser });
+    try {
+      /************ Extract validated fetch project data ************/
+      const validatedIdRequest = res.locals.validatedIdRequest;
+      const { id } = validatedIdRequest;
+
+      if (!Utils.isObjectId(id)) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'not a valid id.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Find Project by email or phone number ************/
+      const project = await ProjectController.projectService.findOneMongo(
+        {
+          _id: id,
+          owner: currentUser._id,
+        },
+        {},
+        { session },
+      );
+
+      /************ Handle invalid credentials ************/
+      if (!project.status || project.data.owner.toString() !== currentUser._id.toString()) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'invalid credentials.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Handle already activated ************/
+      if (project.data.isActive) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'project already activated.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      const validatedActivateProjectRequest = res.locals.validatedActivateProjectRequest;
+
+      const { name, databaseVersion, url, canisterId, controllers } = validatedActivateProjectRequest;
+
+      if (databaseVersion !== project.data.databaseVersion) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'database versions mismatch.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      if (project.data.databaseVersion === DatabaseVersion.PREMIUM || project.data.databaseVersion === DatabaseVersion.PROFESSIONAL) {
+        const payment = await ProjectController.paymentService.mongo.findOneMongo(
+          {
+            projectId: id,
+          },
+          {},
+          { session },
+        );
+
+        if (!payment.status || payment.data.status !== PaymentStatus.COMPLETED) {
+          return ProjectController.abortTransactionWithResponse(
+            res,
+            StatusCode.BAD_REQUEST,
+            session,
+            'activation failed.',
+            LogStatus.FAIL,
+            ...ProjectController.staticsInResponse,
+            {
+              email: '',
+            },
+          );
+        }
+      }
+
+      const canisterDetails: CanisterDetails = { name, projectId: id, url, databaseVersion, owner: currentUser._id, canisterId, controllers };
+
+      currentUser.canisterDetails = currentUser.canisterDetails.map(data => {
+        if (data?.name === canisterDetails.name) {
+          return {
+            ...data,
+            projectId: canisterDetails.projectId,
+            url: canisterDetails.url,
+            databaseVersion: canisterDetails.databaseVersion,
+            owner: canisterDetails.owner,
+            canisterId: canisterDetails.canisterId,
+            controllers: Array.from(new Set([...data.controllers, ...controllers])),
+          };
+        }
+        return data;
+      });
+
+      if (!currentUser.canisterDetails.some(data => data?.name === canisterDetails.name)) {
+        currentUser.canisterDetails.push(canisterDetails);
+      }
+
+      const user = await ProjectController.userService.updateOneMongo(
+        {
+          _id: currentUser._id,
+          deleted: false,
+        },
+        {
+          canisterDetails: currentUser.canisterDetails,
+        },
+        {
+          session,
+        },
+      );
+
+      if (!user.status) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'failed to updated canister details.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Find Project by email or phone number ************/
+      const updatedProject = await ProjectController.projectService.updateOneMongo(
+        {
+          _id: id,
+          owner: currentUser._id,
+        },
+        {
+          isActive: true,
+        },
+        { session },
+      );
+
+      /************ Handle invalid credentials ************/
+      if (!updatedProject.status) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'failed to activate project.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Commit the transaction and send a successful response ************/
+      await session?.commitTransaction();
+      session?.endSession();
+
+      return Utils.apiResponse<ProjectDocument>(
+        res,
+        StatusCode.OK,
+        {},
+        {
+          user: LogUsers.PROJECT,
+          action: LogAction.ACTIVATE_PROJECT,
+          message: 'activation successful.',
+          status: LogStatus.SUCCESS,
+          serviceLog: ProjectModel,
+          options: {
+            email: '',
+          },
+        },
+      );
+    } catch (error) {
+      console.log(error);
+      !session.transaction.isActive && (await session.abortTransaction());
+      session?.endSession();
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<TokenDocument>(
+        res,
+        StatusCode.INTERNAL_SERVER_ERROR,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.PROJECT,
+          action: LogAction.CREATE_PROJECT,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: TokenModel,
+          options: {},
+        },
+      );
+    } finally {
+      session?.endSession();
+    }
+  }
+
+  /**
+   * Handles the Project deletion process.
+   * @param req - Express request object containing the Project sign-up data.
+   * @param res - Express response object to send the response.
+   */
+  async DeactivateProject(req: Request, res: Response) {
+    const session = null;
+    const currentUser = res.locals.currentUser;
+    try {
+      /************ Extract validated fetch project data ************/
+      const validatedIdRequest = res.locals.validatedIdRequest;
+      const { id } = validatedIdRequest;
+
+      if (!Utils.isObjectId(id)) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'not a valid id.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Find Project by email or phone number ************/
+      const project = await ProjectController.projectService.findOneMongo(
+        {
+          _id: id,
+          owner: currentUser._id,
+        },
+        {},
+        { session },
+      );
+
+      /************ Handle invalid credentials ************/
+      if (!project.status || project.data.owner.toString() !== currentUser._id.toString()) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'invalid request.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ deactivate project ************/
+      const updatedProject = await ProjectController.projectService.updateOneMongo(
+        {
+          _id: id,
+          owner: currentUser._id,
+        },
+        {
+          isActive: false,
+        },
+        { session },
+      );
+
+      if (!updatedProject.status) {
+        return ProjectController.abortTransactionWithResponse(
+          res,
+          StatusCode.BAD_REQUEST,
+          session,
+          'failed to deactivate project.',
+          LogStatus.FAIL,
+          ...ProjectController.staticsInResponse,
+          {
+            email: '',
+          },
+        );
+      }
+
+      /************ Commit the transaction and send a successful response ************/
+      await session?.commitTransaction();
+      session?.endSession();
+
+      return Utils.apiResponse<ProjectDocument>(
+        res,
+        StatusCode.OK,
+        {},
+        {
+          user: LogUsers.PROJECT,
+          action: LogAction.DEACTIVATE_PROJECT,
+          message: 'project deactivated.',
+          status: LogStatus.SUCCESS,
+          serviceLog: ProjectModel,
+          options: {
+            email: '',
+          },
+        },
+      );
+    } catch (error) {
+      console.log(error);
+      !session.transaction.isActive && (await session.abortTransaction());
+      session?.endSession();
+
+      /************ Send an error response ************/
+      return Utils.apiResponse<ProjectDocument>(
+        res,
+        StatusCode.INTERNAL_SERVER_ERROR,
+        { devError: error.message || 'Server error' },
+        {
+          user: LogUsers.PROJECT,
+          action: LogAction.CREATE_PROJECT,
+          message: JSON.stringify(error),
+          status: LogStatus.FAIL,
+          serviceLog: ProjectModel,
           options: {},
         },
       );
