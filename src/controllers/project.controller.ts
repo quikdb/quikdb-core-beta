@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { ProjectDocument, ProjectModel, TokenDocument, TokenModel } from '@/services/mongodb';
-import { CanisterDetails, DatabaseVersion, LogAction, LogStatus, LogUsers, PaymentStatus, StatusCode, Token } from '@/@types';
+import { DatabaseVersion, LogAction, LogStatus, LogUsers, PaymentStatus, StatusCode, Token } from '@/@types';
 import * as fs from 'fs';
 import * as path from 'path';
 import { CryptoUtils, MongoTools, Utils } from '@/utils';
@@ -1169,6 +1169,10 @@ class ProjectController extends BaseController {
       const validatedIdRequest = res.locals.validatedIdRequest;
       const { id } = validatedIdRequest;
 
+      const validatedActivateProjectRequest = res.locals.validatedActivateProjectRequest;
+
+      const { databaseVersion, url, canisterId, controllers } = validatedActivateProjectRequest;
+
       if (!Utils.isObjectId(id)) {
         return ProjectController.abortTransactionWithResponse(
           res,
@@ -1183,7 +1187,7 @@ class ProjectController extends BaseController {
         );
       }
 
-      /************ Find Project by email or phone number ************/
+      /************ Find Project by id or owner number ************/
       const project = await ProjectController.projectService.findOneMongo(
         {
           _id: id,
@@ -1223,10 +1227,6 @@ class ProjectController extends BaseController {
         );
       }
 
-      const validatedActivateProjectRequest = res.locals.validatedActivateProjectRequest;
-
-      const { name, databaseVersion, url, canisterId, controllers } = validatedActivateProjectRequest;
-
       if (databaseVersion !== project.data.databaseVersion) {
         return ProjectController.abortTransactionWithResponse(
           res,
@@ -1265,54 +1265,6 @@ class ProjectController extends BaseController {
         }
       }
 
-      const canisterDetails: CanisterDetails = { name, projectId: id, url, databaseVersion, owner: currentUser._id, canisterId, controllers };
-
-      currentUser.canisterDetails = currentUser.canisterDetails.map(data => {
-        if (data?.name === canisterDetails.name) {
-          return {
-            ...data,
-            projectId: canisterDetails.projectId,
-            url: canisterDetails.url,
-            databaseVersion: canisterDetails.databaseVersion,
-            owner: canisterDetails.owner,
-            canisterId: canisterDetails.canisterId,
-            controllers: Array.from(new Set([...data.controllers, ...controllers])),
-          };
-        }
-        return data;
-      });
-
-      if (!currentUser.canisterDetails.some(data => data?.name === canisterDetails.name)) {
-        currentUser.canisterDetails.push(canisterDetails);
-      }
-
-      const user = await ProjectController.userService.updateOneMongo(
-        {
-          _id: currentUser._id,
-          deleted: false,
-        },
-        {
-          canisterDetails: currentUser.canisterDetails,
-        },
-        {
-          session,
-        },
-      );
-
-      if (!user.status) {
-        return ProjectController.abortTransactionWithResponse(
-          res,
-          StatusCode.BAD_REQUEST,
-          session,
-          'failed to updated canister details.',
-          LogStatus.FAIL,
-          ...ProjectController.staticsInResponse,
-          {
-            email: '',
-          },
-        );
-      }
-
       /************ Find Project by email or phone number ************/
       const updatedProject = await ProjectController.projectService.updateOneMongo(
         {
@@ -1321,6 +1273,9 @@ class ProjectController extends BaseController {
         },
         {
           isActive: true,
+          url,
+          canisterId,
+          controllers,
         },
         { session },
       );
