@@ -1,10 +1,10 @@
 import { LogAction, LogStatus, StatusCode } from '@/@types';
 import { NODE_ENV, API_BASE_URL } from '@/config';
 import request from 'supertest';
-import { projectId, tokenForII } from '../constants.test';
+import { projectId, tokenForSamson } from '../constants.test';
 
 const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';
-const token = tokenForII;
+const token = tokenForSamson;
 
 describe('Integration Test: Auth Module', () => {
   describe('[POST] /v/p/:data', () => {

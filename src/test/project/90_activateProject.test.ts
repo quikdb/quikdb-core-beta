@@ -2,10 +2,10 @@ import { LogAction, LogStatus, StatusCode } from '@/@types';
 import { ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER, NODE_ENV, API_BASE_URL } from '@/config';
 import { CryptoUtils } from '@/utils';
 import request from 'supertest';
-import { canisterId, databaseVersion, principalId, projectId, projectName, tokenForII } from '../constants.test';
+import { canisterId, databaseVersion, principalId, projectId, tokenForSamson } from '../constants.test';
 
 const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';
-const token = tokenForII;
+const token = tokenForSamson;
 
 describe('Integration Test: Auth Module', () => {
   describe('[POST] /v/p', () => {
@@ -18,7 +18,6 @@ describe('Integration Test: Auth Module', () => {
 
       console.log({ encryptedProjectId });
       const data = JSON.stringify({
-        name: projectName,
         databaseVersion,
         url: '127.0.0.1',
         canisterId,

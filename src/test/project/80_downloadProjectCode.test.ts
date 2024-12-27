@@ -3,10 +3,10 @@ import path from 'path';
 import fs from 'fs';
 import { API_BASE_URL, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER, NODE_ENV } from '@/config';
 import { CryptoUtils } from '@/utils';
-import { projectId, tokenForII } from '../constants.test';
+import { projectId, tokenForSamson } from '../constants.test';
 
 const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';
-const token = tokenForII;
+const token = tokenForSamson;
 
 describe('Integration Test: Project Module', () => {
   describe('[PATCH] /v/p/:data/code', () => {

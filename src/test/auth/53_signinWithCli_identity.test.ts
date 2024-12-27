@@ -15,13 +15,13 @@ describe('Integration Test: Auth Module', () => {
         encryptedPassword,
       });
 
-      const encryptedData = CryptoUtils.aesEncrypt(identity, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
+      const encryptedIdentity = CryptoUtils.aesEncrypt(identity, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER);
 
-      console.log({ encryptedData });
+      console.log({ encryptedIdentity });
 
       const data = {
-        identity: encryptedData,
-        username: 'Samson',
+        identity: encryptedIdentity,
+        username: 'samson',
         projectTokenRef,
       };
 

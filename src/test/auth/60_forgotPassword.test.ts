@@ -2,12 +2,12 @@ import { LogAction, LogStatus, StatusCode } from '@/@types';
 import { NODE_ENV, API_BASE_URL, ENCRYPTION_KEY, ENCRYPTION_RANDOMIZER } from '@/config';
 import request from 'supertest';
 import { CryptoUtils } from '@/utils';
-import { tokenForII } from '../constants.test';
+import { tokenForSamson } from '../constants.test';
 
 const BASE_URL = NODE_ENV === 'production' ? API_BASE_URL : 'http://localhost:4567';
 
 console.log({ BASE_URL });
-const token = tokenForII;
+const token = tokenForSamson;
 
 describe('Integration Test: Auth Module', () => {
   describe('[POST] /forgotPassword', () => {
