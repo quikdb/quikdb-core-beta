@@ -15,7 +15,7 @@ const ProjectSchema: mongoose.Schema = new mongoose.Schema(
     databaseVersion: { type: String, enum: Object.values(DatabaseVersion), required: true },
     isActive: { type: Boolean, required: true, default: false },
     url: { type: String, required: false, default: '' },
-    canisterId: { type: String, unique: true, sparse: true },
+    canisterId: { type: String, unique: false, sparse: true },
     controllers: { type: [String], required: true, default: [] },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } },

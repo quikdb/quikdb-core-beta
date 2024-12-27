@@ -15,7 +15,7 @@ describe('Integration Test: Auth Module', () => {
     it('should verify the one time password', async () => {
       const data = JSON.stringify({
         email: testEmail,
-        OTPType: OtpRequestType.PASSWORD,
+        OTPType: OtpRequestType.SIGNUP,
         otp: '123456',
       });
 
